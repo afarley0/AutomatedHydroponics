@@ -1,17 +1,21 @@
 import Tkinter as tk
+import ttk
 import tkFont
 #from VideoCapture import Device
 from PIL import Image, ImageTk #, ImageEnhance, ImageDraw
 import cv2
 import sys, glob, os, time, math, copy, threading
 import tkMessageBox
-#import serial
+from tkMessageBox import *
+import serial
 import pickle
 #import pyflycap2
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 import requests
+import datetime
+import csv
 
 #setting global constants for use in the code
 number_of_cameras = 2
@@ -213,7 +217,7 @@ class Thread_Timer(threading.Thread):
         #changes time to minutes
         self.total_time*=60
 
-        
+
         #initializes and starts the timer
         threading.Thread.__init__(self)
 
@@ -223,7 +227,7 @@ class Thread_Timer(threading.Thread):
 
     #begins on timer start
     def run(self):
-        
+
         #loop to count the total time desired
         while self.total_time >0:
             self.total_time -= 1
@@ -234,6 +238,19 @@ class Thread_Timer(threading.Thread):
         if app.repeat_checkbutton.var.get() == 1:
 
             app.multi_seq_list_copy.append(self.sequence)
+
+#TEST
+#class Testbox(tk.Frame):
+#    def __init__(self,master=None):
+#        self.createWidgets2()
+#        self.pack()
+
+#    def createWidgets2(self):
+#        auto_state = tk.IntVar()
+#        #place check button in fluid frame
+#        self.auto_check = tk.Checkbutton(fluids_frame, text="Automatic Watering", variable=auto_state)
+#        self.auto_check.grid(column=3,row=2,sticky='e')
+
 
 #main class
 class Application(tk.Frame):
@@ -263,9 +280,9 @@ class Application(tk.Frame):
 
         #creates dictionary to store desired
         self.timer_dict = {}
-        self.timer_dict= dict.fromkeys(['sequence1', 
+        self.timer_dict= dict.fromkeys(['sequence1',
             'sequence2', 'sequence3', 'sequence4', 'sequence5'])
-        
+
         self.running= False #prevents signals while moving
         self.readyToMoveBool=True #informs when motion is finished
         self.stopped_bool= False #detects "Stop" button
@@ -325,7 +342,7 @@ class Application(tk.Frame):
         '''
     #creates the widgets on the app
     def createWidgets(self):
-        
+
         #names the windows
         self.parent.title("SMART Table")
 
@@ -413,7 +430,7 @@ class Application(tk.Frame):
         #self.z_coordinate_entry = Spinbox(coordinate_frame, from_=0, to=self.calib_coords['Z'], validate = 'all', validatecommand = self.vldt_ifnum_cmd)
 
         #sends the arm to the desired position
-        self.submit_coordinates = tk.Button(coordinate_frame,text="Submit new Coordinates", 
+        self.submit_coordinates = tk.Button(coordinate_frame,text="Submit new Coordinates",
             command =lambda: self.Move_By_Coordinates(self.x_coordinate_entry.get(),
                 self.y_coordinate_entry.get(),
                 self.z_coordinate_entry.get()))
@@ -444,7 +461,7 @@ class Application(tk.Frame):
         self.coord_plane.pack()
         #creates the grid and stores some variables
         offset, self.block_size, self.grid, self.height, self.width = self.Grid(grid_width,grid_height)
-        
+
         #previously used when converting the motor steps to smaller numbers
         #dropped for precision
         self.conversion_dict, self.max_dict = self.Grid_Conversion(self.coord_plane, self.calib_coords)
@@ -504,26 +521,341 @@ class Application(tk.Frame):
         self.run_sequence_button.grid(row = 5, column = 0)
         self.repeat_checkbutton.grid(row = 6, column = 0)
 
+        #creates frame for fluid system
+        fluids_frame = tk.LabelFrame(self, text = "Fluids and Load Cells", padx = 5, pady = 5)
+        fluids_frame.grid(row=0, column = 3, rowspan = 4)
+        fluids_frame.grid_columnconfigure(2,minsize=100)
+
+        #creates buttons within fluid frame
+        self.z1e1_button = tk.Button(fluids_frame, text="Zone 1: Emitter 1", command=self.z1e1)
+        self.z1e1_button.grid(column=0,row=0,padx=5,pady=5)
+
+        self.z1e2_button = tk.Button(fluids_frame, text="Zone 1: Emitter 2", command=self.z1e2)
+        self.z1e2_button.grid(column=0,row=1,padx=5,pady=5)
+
+        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=self.z1e3)
+        self.z1e3_button.grid(column=0,row=2,padx=5,pady=5)
+
+        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=self.z1e4)
+        self.z1e4_button.grid(column=0,row=3,padx=5,pady=5)
+
+        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=self.z2e1)
+        self.z2e1_button.grid(column=0,row=4,padx=5,pady=5)
+
+        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=self.z2e2)
+        self.z2e2_button.grid(column=0,row=5,padx=5,pady=5)
+
+        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=self.z2e3)
+        self.z2e3_button.grid(column=0,row=6,padx=5,pady=5)
+
+        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=self.z2e4)
+        self.z2e4_button.grid(column=0,row=7,padx=5,pady=5)
+
+        self.z3e1_button = tk.Button(fluids_frame, text="Zone 3: Emitter 1", command=self.z3e1)
+        self.z3e1_button.grid(column=0,row=8,padx=5,pady=5)
+
+        self.z3e2_button = tk.Button(fluids_frame, text="Zone 3: Emitter 2", command=self.z3e2)
+        self.z3e2_button.grid(column=0,row=9,padx=5,pady=5)
+
+        self.z3e3_button = tk.Button(fluids_frame, text="Zone 3: Emitter 3", command=self.z3e3)
+        self.z3e3_button.grid(column=0,row=10,padx=5,pady=5)
+
+        self.z3e4_button = tk.Button(fluids_frame, text="Zone 3: Emitter 4", command=self.z3e4)
+        self.z3e4_button.grid(column=0,row=11,padx=5,pady=5)
+
+        self.zero_button = tk.Button(fluids_frame, text="Zero Load Cells", command=self.zero)
+        self.zero_button.grid(column=3,row=12,pady=5,sticky="e")
+
+        #auto_state = tk.BooleanVar()
+        #auto_state.set(False)
+        auto_state = tk.IntVar()
+        #place check button in fluid frame
+        self.auto_check = tk.Checkbutton(fluids_frame, text="Automatic Watering", variable=auto_state)
+        self.auto_check.grid(column=3,row=2,sticky='e')
+        testVar = auto_state.get()
+        print(testVar)
+
+
+        self.info_send = tk.Button(fluids_frame, text="Submit Fluid Information", command=self.sendall(auto_state, time_combo), width=20)
+        self.info_send.grid(column=0,row=12,pady=10,sticky="e",rowspan=2)
+
+        #create labels within fluid frame
+        self.time_label = tk.Label(fluids_frame, text="Time of Automatic Watering:")
+        self.time_label.grid(column=3,row=0,sticky='e')
+
+        self.labelz1e1 = tk.Label(fluids_frame, text="mL")
+        self.labelz1e1.grid(column=2,row=0,sticky='e')
+
+        self.labelz1e2 = tk.Label(fluids_frame, text="mL")
+        self.labelz1e2.grid(column=2,row=1,sticky='e')
+
+        self.labelz1e3 = tk.Label(fluids_frame, text="mL")
+        self.labelz1e3.grid(column=2,row=2,sticky='e')
+
+        self.labelz1e4 = tk.Label(fluids_frame, text="mL")
+        self.labelz1e4.grid(column=2,row=3,sticky='e')
+
+        self.labelz2e1 = tk.Label(fluids_frame, text="mL")
+        self.labelz2e1.grid(column=2,row=4,sticky='e')
+
+        self.labelz2e2 = tk.Label(fluids_frame, text="mL")
+        self.labelz2e2.grid(column=2,row=5,sticky='e')
+
+        self.labelz2e3 = tk.Label(fluids_frame, text="mL")
+        self.labelz2e3.grid(column=2,row=6,sticky='e')
+
+        self.labelz2e4 = tk.Label(fluids_frame, text="mL")
+        self.labelz2e4.grid(column=2,row=7,sticky='e')
+
+        self.labelz3e1 = tk.Label(fluids_frame, text="mL")
+        self.labelz3e1.grid(column=2,row=8,sticky='e')
+
+        self.labelz3e2 = tk.Label(fluids_frame, text="mL")
+        self.labelz3e2.grid(column=2,row=9,sticky='e')
+
+        self.labelz3e3 = tk.Label(fluids_frame, text="mL")
+        self.labelz3e3.grid(column=2,row=10,sticky='e')
+
+        self.labelz3e4 = tk.Label(fluids_frame, text="mL")
+        self.labelz3e4.grid(column=2,row=11,sticky='e')
+
+        #places comboboxes in fluid frame
+        self.time_combo = ttk.Combobox(fluids_frame, width=20, values=("1:00","2:00","3:00","4:00","5:00","6:00","7:00","8:00","9:00","10:00","11:00","12:00"))
+        self.time_combo.grid(column=3,row=1,sticky='e')
+
+        self.comboz1e1 = ttk.Combobox(fluids_frame,width=10, values=("Tank 1","Tank 2","Tank 3","Tank 4"))
+        self.comboz1e1.grid(column=1,row=0,padx=10)
+
+        self.comboz1e2 = ttk.Combobox(fluids_frame,width=10, values=("Tank 1","Tank 2","Tank 3","Tank 4"))
+        self.comboz1e2.grid(column=1,row=1,padx=10)
+
+        self.comboz1e3 = ttk.Combobox(fluids_frame,width=10, values=("Tank 1","Tank 2","Tank 3","Tank 4"))
+        self.comboz1e3.grid(column=1,row=2,padx=10)
+
+        self.comboz1e4 = ttk.Combobox(fluids_frame,width=10, values=("Tank 1","Tank 2","Tank 3","Tank 4"))
+        self.comboz1e4.grid(column=1,row=3,padx=10)
+
+        self.comboz2e1 = ttk.Combobox(fluids_frame,width=10, values=("Tank 5","Tank 6","Tank 7","Tank 8"))
+        self.comboz2e1.grid(column=1,row=4,padx=10)
+
+        self.comboz2e2 = ttk.Combobox(fluids_frame,width=10, values=("Tank 5","Tank 6","Tank 7","Tank 8"))
+        self.comboz2e2.grid(column=1,row=5,padx=10)
+
+        self.comboz2e3 = ttk.Combobox(fluids_frame,width=10, values=("Tank 5","Tank 6","Tank 7","Tank 8"))
+        self.comboz2e3.grid(column=1,row=6,padx=10)
+
+        self.comboz2e4 = ttk.Combobox(fluids_frame,width=10, values=("Tank 5","Tank 6","Tank 7","Tank 8"))
+        self.comboz2e4.grid(column=1,row=7,padx=10)
+
+        self.comboz3e1 = ttk.Combobox(fluids_frame,width=10, values=("Tank 9","Tank 10","Tank 11","Tank 12"))
+        self.comboz3e1.grid(column=1,row=8,padx=10)
+
+        self.comboz3e2 = ttk.Combobox(fluids_frame,width=10, values=("Tank 9","Tank 10","Tank 11","Tank 12"))
+        self.comboz3e2.grid(column=1,row=9,padx=10)
+
+        self.comboz3e3 = ttk.Combobox(fluids_frame,width=10, values=("Tank 9","Tank 10","Tank 11","Tank 12"))
+        self.comboz3e3.grid(column=1,row=10,padx=10)
+
+        self.comboz3e4 = ttk.Combobox(fluids_frame,width=10, values=("Tank 9","Tank 10","Tank 11","Tank 12"))
+        self.comboz3e4.grid(column=1,row=11,padx=10)
+
+        #place entry boxes in fluid frame
+        self.timing = tk.Entry(fluids_frame)
+
+        self.entryz1e1 = tk.Entry(fluids_frame, width=10)
+        self.entryz1e1.grid(column=2,row=0,sticky='w')
+
+        self.entryz1e2 = tk.Entry(fluids_frame, width=10)
+        self.entryz1e2.grid(column=2,row=1,sticky='w')
+
+        self.entryz1e3 = tk.Entry(fluids_frame, width=10)
+        self.entryz1e3.grid(column=2,row=2,sticky='w')
+
+        self.entryz1e4 = tk.Entry(fluids_frame, width=10)
+        self.entryz1e4.grid(column=2,row=3,sticky='w')
+
+        self.entryz2e1 = tk.Entry(fluids_frame, width=10)
+        self.entryz2e1.grid(column=2,row=4,sticky='w')
+
+        self.entryz2e2 = tk.Entry(fluids_frame, width=10)
+        self.entryz2e2.grid(column=2,row=5,sticky='w')
+
+        self.entryz2e3 = tk.Entry(fluids_frame, width=10)
+        self.entryz2e3.grid(column=2,row=6,sticky='w')
+
+        self.entryz2e4 = tk.Entry(fluids_frame, width=10)
+        self.entryz2e4.grid(column=2,row=7,sticky='w')
+
+        self.entryz3e1 = tk.Entry(fluids_frame, width=10)
+        self.entryz3e1.grid(column=2,row=8,sticky='w')
+
+        self.entryz3e2 = tk.Entry(fluids_frame, width=10)
+        self.entryz3e2.grid(column=2,row=9,sticky='w')
+
+        self.entryz3e3 = tk.Entry(fluids_frame, width=10)
+        self.entryz3e3.grid(column=2,row=10,sticky='w')
+
+        self.entryz3e4 = tk.Entry(fluids_frame, width=10)
+        self.entryz3e4.grid(column=2,row=11,sticky='w')
+
+
+    def sendall(self, auto_state, time_combo):
+    #HELP: NEED TO GET VALUE FROM CHECKBOX
+    #IF DEF IS OUTSIDE DEF CREATE_WIDGETS, DOES NOT RECOGNIZE VARIABLES FOR CHECKBOX, TIME COMBO, ETC
+    #IF DEF IS INSIDE DEF CREATE_WIDGETS, SELF TAKES AT LEAST THREE ARGUMENTS ERROR
+    #MAKE CLASS FOR CHECKBOX?
+
+    #NEEDS TO SEND ALL VOLUMES AND TANK DESIGNATION TO VARIABLES, CHECK AND START AUTOMATIC WATERING
+    #VOLUME FROM ENTRY BOXES, TANKS FROM COMBO BOXES, TIME FROM COMBO BOX
+        print("Sent")
+        #testVar = auto_state.get()
+    #TEST FOR AUTOMATIC WATERING
+    #LOOP SOMEWHERE?
+    #systemTime = time.strftime("%Y %m %d %H %M", time.localtime())
+        systemTime = datetime.datetime.now().strftime("%H:%M")
+        timeVariable = self.time_combo.get()
+    #NEED TO MAKE LOOP
+    #MAKE SURE IT ONLY CHECKS TIME ONCE A MINUTE?
+        #print(timeVariable)
+        if self.auto_state.get() == 0:
+            print("test")
+            if systemTime == timeVariable:
+            #SEND COMMAND TO ARDUINO FOR WATERING SEQUENCE HERE
+                print('Yes')
+
+        #VALUES TO SEND TO ARDUINO FOR FLUID VOLUMES
+        z1e1_volume = self.entryz1e1.get()
+        z1e2_volume = self.entryz1e2.get()
+        z1e3_volume = self.entryz1e3.get()
+        z1e4_volume = self.entryz1e4.get()
+        z2e1_volume = self.entryz2e1.get()
+        z2e2_volume = self.entryz2e2.get()
+        z2e3_volume = self.entryz2e3.get()
+        z2e4_volume = self.entryz2e4.get()
+        z3e1_volume = self.entryz3e1.get()
+        z3e2_volume = self.entryz3e2.get()
+        z3e3_volume = self.entryz3e3.get()
+        z3e4_volume = self.entryz3e4.get()
+        print(z1e1_volume)
+        print(z1e2_volume)
+        print(z1e3_volume)
+        print(z1e4_volume)
+
+        #VALUES TO SEND TO ARDUINO FOR TANK DESIGNATION
+        z1e1_tank = self.comboz1e1.get()
+        z1e2_tank = self.comboz1e2.get()
+        z1e3_tank = self.comboz1e3.get()
+        z1e4_tank = self.comboz1e4.get()
+        z2e1_tank = self.comboz2e1.get()
+        z2e2_tank = self.comboz2e2.get()
+        z2e3_tank = self.comboz2e3.get()
+        z2e4_tank = self.comboz2e4.get()
+        z3e1_tank = self.comboz3e1.get()
+        z3e2_tank = self.comboz3e2.get()
+        z3e3_tank = self.comboz3e3.get()
+        z3e4_tank = self.comboz3e4.get()
+        print(z1e1_tank)
+        print(z1e2_tank)
+        print(z1e3_tank)
+        print(z1e4_tank)
+
+    def zero(self):
+        #CALL ZERO LOAD CELL FUNCTION
+        msgBox = tk.tkMessageBox.askyesnocancel('Confirmation Window','Are you sure?')
+        if msgBox=='yes':
+            root.destroy()
+            #SEND COMMAND TO ARDUINO TO CALL ZERO FUNCTION
+        else:
+            print("Canceled")
+        print("Zero")
+
+    def z1e1(self):
+        msgBox = tk.tkMessageBox.askyesnocancel('Confirmation Window','Start Watering Sequence?')
+        if msgBox=='yes':
+            z1e1_volume = self.entryz1e1.get()
+            z1e1_tank = self.comboz1e1.get()
+            ser1.open()
+            ser1.write('z1e1') #INFO FOR VOLUME AND TANK, SEND PROPER COMMAND
+            output = ser1.readline().decode().split('\r\n')
+            time.sleep(10)
+            ser1.close()
+            #OPEN SERIAL PORT AND SEND COMMAND TO WATER
+            #ASSIGN TANK DESIGNATION AND VOLUME TO VARIABLES
+            #GET VOLUME AND TANK FROM BOXES
+        else:
+            print("Canceled")
+        print("Watering Zone 1: Emitter 1")
+
+    def z1e2(self):
+        print("Watering Zone 1: Emitter 2")
+
+    def z1e3(self):
+        print("Watering Zone 1: Emitter 3")
+
+    def z1e4(self):
+        print("Watering Zone 1: Emitter 4")
+
+    def z2e1(self):
+        print("Watering Zone 2: Emitter 1")
+
+    def z2e2(self):
+        print("Watering Zone 2: Emitter 2")
+
+    def z2e3(self):
+        print("Watering Zone 2: Emitter 3")
+
+    def z2e4(self):
+        print("Watering Zone 2: Emitter 4")
+
+    def z3e1(self):
+        print("Watering Zone 3: Emitter 1")
+
+    def z3e2(self):
+        print("Watering Zone 3: Emitter 2")
+
+    def z3e3(self):
+        print("Watering Zone 3: Emitter 3")
+
+    def z3e4(self):
+        print("Watering Zone 3: Emitter 4")
+
+    def output_excel(filename):
+        with open(filename, mode='a') as test_file:
+            test_writer = csv.writer(test_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            #NEEDS CONSTRUCTION OF LABELS
+            time = datetime.datetime.now().strftime("%Y%D%M, %H:%M")
+            data = ['1,2,3,4,5'] #PUT ARDUINO OUTPUT HERE
+            data = data[0].split(',')
+            data = [time,data[0],data[1],data[2],data[3],data[4]]
+            test_writer.writerow(data)
+
+    def excel_test(filename): #USE TO CREATE COLUMN HEADERS?
+        with open(filename, mode='w') as test_file:
+            test_writer = csv.writer(test_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            data = ['Time,Temperature,Humidity,Weight']
+            data = data[0].split(',')
+            test_writer.writerow(data)
+
         '''
         #label creation to be used in displaying time for sequences
         #need to fix/finish integration
         self.time_display_frame = LabelFrame(self, text = "Time Display", padx = 5, pady = 5)
         self.time_display_frame.grid(row = 0, column = 2, rowspan = 2)
 
-        self.sequence1_label = Label(self.time_display_frame, text = "Sequence 1").grid(row = 0, column = 0) 
+        self.sequence1_label = Label(self.time_display_frame, text = "Sequence 1").grid(row = 0, column = 0)
         self.sequence2_label = Label(self.time_display_frame, text = "Sequence 2").grid(row = 1, column = 0)
-        self.sequence3_label = Label(self.time_display_frame, text = "Sequence 3").grid(row = 2, column = 0) 
+        self.sequence3_label = Label(self.time_display_frame, text = "Sequence 3").grid(row = 2, column = 0)
         self.sequence4_label = Label(self.time_display_frame, text = "Sequence 4").grid(row = 3, column = 0)
         self.sequence5_label = Label(self.time_display_frame, text = "Sequence 5").grid(row = 4, column = 0)
 
-        self.sequence1_time_label = Label(self.time_display_frame, text = "Sequence 1").grid(row = 0, column = 1) 
+        self.sequence1_time_label = Label(self.time_display_frame, text = "Sequence 1").grid(row = 0, column = 1)
         self.sequence2_time_label = Label(self.time_display_frame, text = "Sequence 2").grid(row = 1, column = 1)
-        self.sequence3_time_label = Label(self.time_display_frame, text = "Sequence 3").grid(row = 2, column = 1) 
+        self.sequence3_time_label = Label(self.time_display_frame, text = "Sequence 3").grid(row = 2, column = 1)
         self.sequence4_time_label = Label(self.time_display_frame, text = "Sequence 4").grid(row = 3, column = 1)
         self.sequence5_time_label = Label(self.time_display_frame, text = "Sequence 5").grid(row = 4, column = 1)
         '''
 
-    #creates the menu 
+    #creates the menu
     def Add_Menu(self):
 
         #creates the menu with titles
@@ -613,10 +945,10 @@ class Application(tk.Frame):
             _, frame = cap.read()
             #stores and resizes image
             self.cv2image = frame
-            self.cv2image = cv2.resize(self.cv2image,(pic_width, pic_height))
+            #self.cv2image = cv2.resize(self.cv2image,(pic_width, pic_height))
             #color conversion of the image
-            self.livecv2image = cv2.cvtColor(self.cv2image, cv2.COLOR_BGR2RGBA)
-            
+            #self.livecv2image = cv2.cvtColor(self.cv2image, cv2.COLOR_BGR2RGBA)
+
             '''
             #converts the image to isolate most of the green pixel range
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -626,13 +958,13 @@ class Application(tk.Frame):
             '''
 
             #converts to PIL image
-            self.img = Image.fromarray(self.livecv2image)
-            imgtk = ImageTk.PhotoImage(image=self.img)
+            #self.img = Image.fromarray(self.livecv2image)
+            #imgtk = ImageTk.PhotoImage(image=self.img)
 
             #displays image in the label
-            self.photo_label.config(image = imgtk)
-            self.photo_label.image = imgtk
-            self.photo_label.pack()
+            #self.photo_label.config(image = imgtk)
+            #self.photo_label.image = imgtk
+            #self.photo_label.pack()
 
             #updates every 10 ms
             self.after(10, lambda: self.Show_Frame(cap))
@@ -706,23 +1038,23 @@ class Application(tk.Frame):
         if not os.path.exists(my_directory):
             os.makedirs(my_directory)
 
-        #allows ordered image saving up to 100,000 images in each folder    
+        #allows ordered image saving up to 100,000 images in each folder
         iteration_number = self.Expand_to_Five_Digits(str(self.sequence_photo_dict[sequence_name]))
         '''
-        #old naming procedure without embedded time 
-        #removed at same time as in picture labeling 
+        #old naming procedure without embedded time
+        #removed at same time as in picture labeling
         #updates the path to include the iteration number
         my_path = "C:/Python27/data/pictures/%s/Location%s/%s_%s.jpg" %(
             trimmed_name, str(fullphotocounter), str(fullphotocounter),
             iteration_number)
         '''
-        
+
         my_path = "./data/Pictures/%s/Location%s/%s-%s_%s_%s.png" %(
             trimmed_name, str(fullphotocounter),
             time.strftime("%Y%m%d%H%M%S", time.localtime()),
             trimmed_name,
             str(fullphotocounter), iteration_number)
-        
+
         self.after(1100)
 
         #loops five updates to increase clarity of the image captured
@@ -744,7 +1076,7 @@ class Application(tk.Frame):
             #removed to prevent blocking of any part of the image
             cv2.rectangle(img,(0,img.shape[0]-40),(200, img.shape[0]),(71,66,66),-1)
             cv2.putText(img, sequence_name,
-                (10, img.shape[0]-30), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255,255,255), 1)    
+                (10, img.shape[0]-30), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255,255,255), 1)
             cv2.putText(img, "%s - %s" %(str(fullphotocounter),iteration_number),
                 (10, img.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255,255,255), 1)
             cv2.putText(img, time.strftime("%a, %d %b %Y %H:%M:%S ", time.localtime()),
@@ -805,7 +1137,7 @@ class Application(tk.Frame):
                 d['Y'] = self.y
                 d['Z'] = self.z
                 self.newLocDecDict = d
-                
+
                 #sends location to controller
                 for key in self.newLocDecDict:
                     #print self.newLocDecDict[key]
@@ -820,15 +1152,15 @@ class Application(tk.Frame):
                 #waits until ready to move
                 else:
                     self.after(100, lambda: self.Move_By_Coordinates(x, y, z))
-            
-            #if larger than bounds, show error    
+
+            #if larger than bounds, show error
             else:
                 tk.tkMessageBox.showerror("Error", "Out Of Bounds.")
 
         #if not integer, show error
         except ValueError:
             tk.tkMessageBox.showerror('Error','Please use numbers as the coordinates.')
-      
+
     #creates the grid for selecting a location
     def Grid(self,gridw,gridh):
 
@@ -849,14 +1181,14 @@ class Application(tk.Frame):
                 self.coord_plane.create_rectangle(x1,y1,x2,y2, outline = "gray")
                 self.grid[row].append(0)
         return offset, block_size, self.grid, height, width
-    
+
     #move to approximate click location
     def Grid_Clicked(self, event):
 
         #determines location of click
         pos = event.x, event.y
         offset = 2
-        column = (pos[0]-offset)//block_size 
+        column = (pos[0]-offset)//block_size
         row = (pos[1]-offset)//block_size
 
         #centers position within the box and displays message
@@ -871,12 +1203,12 @@ class Application(tk.Frame):
         currpos = (self.x_coordinate_current.cget('text'),
             self.y_coordinate_current.cget('text'))
         newposmessage = "Are You Sure You Want to Move From\n %s to %s " %(repr(currpos), repr(pixelpos))
-        
+
         #checks if within grid
         if row >=0 and column>=0:
             #cancels if writing failed
             try:
-                
+
                 print ("Click ", roundedpos, "Grid coordinates:",column+1,row+1, "Converted position:", pixelpos)
                 result = tk.tkMessageBox.askyesno("New Position", newposmessage , icon='warning')
                 #if yes, move to clicked location
@@ -912,7 +1244,7 @@ class Application(tk.Frame):
                 '''
 
         #currently shows all of the locations clicked
-        #need to switch to only most recent move        
+        #need to switch to only most recent move
         for row in range(self.height):
             for column in range(self.width):
                 color = "gray"
@@ -923,7 +1255,7 @@ class Application(tk.Frame):
                 x2 = x1+block_size
                 y2 = y1+block_size
                 self.coord_plane.create_rectangle(x1,y1,x2,y2, outline = color)
-        
+
         '''#draws the lines between selected locations
         if len(self.locations)>1:
             self.coord_plane.create_line(self.locations)'''
@@ -961,7 +1293,7 @@ class Application(tk.Frame):
         #checks if move went beyond 0 and sets to 0
         if value < 0:
             tk.tkMessageBox.showwarning("Warning", "Movement went past home. Setting axis to 0.")
-            value = 0 
+            value = 0
         return value
 
     #tests serial writing for troubleshooting
@@ -977,17 +1309,17 @@ class Application(tk.Frame):
             #outputs everything written on board, including responses
             while ser.inWaiting()>0:
                 out += ser.read(1)
-            #prints to test 
+            #prints to test
             if out != '':
                 print(">>" + out)
                 print(type(out))
-                
+
             else:
                 print("empty read")
         else:
             print("Incorrect size of input.")
-        
-        return out    
+
+        return out
 
     #writes command to controller
     #condensed form of 'Serial_Test'
@@ -1019,7 +1351,7 @@ class Application(tk.Frame):
     #lengthens the new location in hex
     #to a five character location
     def Expand_to_Five_Digits(self,partHexLoc):
-        
+
         #maintains the copy of the original numbers
         fullHexLoc = partHexLoc
 
@@ -1072,7 +1404,7 @@ class Application(tk.Frame):
 
     #sends command to move
     def Move(self, command):
-        
+
         #sets boolean to true and allows stop button to be pressed again
         self.running = True
         self.Disable_Widgets(True)
@@ -1084,11 +1416,11 @@ class Application(tk.Frame):
         s=""
         #delay for response
         self.Run_Until_Stop(s)
-     
+
     #repeating function to check for stop command during motion
     #and determine responses from moves
     def Run_Until_Stop(self,s):
-        
+
         #tries movement
         try:
             #if movement complete, do things
@@ -1114,7 +1446,7 @@ class Application(tk.Frame):
 
             #continues repeating until movement is done
             if self.running:
-                
+
                 self.after(10, lambda: self.Run_Until_Stop(s))
 
         except:
@@ -1122,7 +1454,7 @@ class Application(tk.Frame):
 
     #stops the movement of the table
     def On_Stop(self):
-        
+
         if self.running:
 
             #stops the user from sending an additional stop command
@@ -1150,7 +1482,7 @@ class Application(tk.Frame):
         #exits if nothing was written
         if response == '':
             return
-    
+
     #zeroes each axis
     def Home(self):
         self.Move('H')
@@ -1219,7 +1551,7 @@ class Application(tk.Frame):
 
     #creates an addition box to delete a sequence
     def Delete_Sequence(self):
-        
+
         #creates window and waits for a response
         self.selection =SeqDeleteWindow(self.master)
         self.master.wait_window(self.selection.top)
@@ -1241,7 +1573,7 @@ class Application(tk.Frame):
 
         #asks for sequence name
         savename = tk.simpledialog.askstring("Save Sequence", "Name this sequence.")
-        
+
         #tests for certain responses
         #if blank, return
         #if a number, request a different name, because solo numbers cause issues
@@ -1267,7 +1599,7 @@ class Application(tk.Frame):
 
                     #if yes
                     #currently resets, assuming not continuation of old sequence
-                    #will probably need to be changed for minor changes in sequence 
+                    #will probably need to be changed for minor changes in sequence
                     if result:
 
                         #renames the folder to new case configuration
@@ -1360,7 +1692,7 @@ class Application(tk.Frame):
 
         #checks for a selection
         if self.selection.value != None:
-            
+
             print(self.multi_seq_list)
 
             #stores the selected list
@@ -1398,12 +1730,12 @@ class Application(tk.Frame):
             file=file[:-4]
             self.sequencemenu.add_command(label = file, command = lambda file = file: self.Timer_Creation(file))
             self.sequence_list.append(file)
-        
+
         os.chdir("..\\..\\..")
 
     #runs the steps. differentiates between the commands
     def Run_Sequence(self):
-        
+
         global photocounter
         global sequenceindex
 
@@ -1426,7 +1758,7 @@ class Application(tk.Frame):
 
         #checks if a timer was already created for this sequence
         #to add again for the next iteration
-        #FIX: if a sequence is started while one is running with the 
+        #FIX: if a sequence is started while one is running with the
         #intent to not repeat, it will crash
         if not self.timer_created and self.repeat_checkbutton.var.get() == 1 and not self.single_run_bool:
 
@@ -1441,7 +1773,7 @@ class Application(tk.Frame):
 
             #creates the timer for the sequence
             #with the amount of run time desired
-            Thread_Timer(self, self.timer_dict[sequence_track]['sequence'], self.timer_dict[sequence_track]['timeout'])    
+            Thread_Timer(self, self.timer_dict[sequence_track]['sequence'], self.timer_dict[sequence_track]['timeout'])
 
         #continues to run until there are no more steps in the sequence
         if sequenceindex < self.sequence_lb.size():
@@ -1482,7 +1814,7 @@ class Application(tk.Frame):
                     currx, curry, currz = line.split(" , ")
                     self.Move_By_Coordinates(currx, curry, currz)
                     sequenceindex += 1
-                    
+
             self.after(100, lambda: self.Run_Sequence())
 
         #when sequence is done
@@ -1539,11 +1871,11 @@ class Application(tk.Frame):
         self.selection =SeqDeleteWindow(self.master)
         self.master.wait_window(self.selection.top)
         if self.selection.value != None:
-            self.sequence_photo_dict['%s'%self.selection.value] = 0            
+            self.sequence_photo_dict['%s'%self.selection.value] = 0
 
     #increases the iteration number of the sequences
     def Pickle_Track(self):
-        
+
         #increases the iteration by one
         self.sequence_photo_dict[self.sequence_name_label.cget("text")]+=1
 
@@ -1560,7 +1892,7 @@ class Application(tk.Frame):
             " \n of the SMART Table and calibrate new ones.",
             " \n \n Are you sure you would like to re-calibrate?")
         result = tk.tkMessageBox.askyesno("Are you sure?", calibration_string , icon='warning')
-        
+
         #runs calibration
         if result:
             self.running = True
@@ -1574,7 +1906,7 @@ class Application(tk.Frame):
     def Home_From_Unknown_Position(self):
 
         #self.Serial_Writing("XU00000")
-        pass  
+        pass
 
     #used to initialize timers for sequences
     def Timer_Creation(self, sequence):
@@ -1605,10 +1937,10 @@ class Application(tk.Frame):
 
                         #checks if duplicate timer request
                         if self.timer_dict[key]['sequence'] == self.sequence_name_label.cget("text"):
-                            
+
                             #asks if the user wants to replace the old time with the new time
                             response = tk.tkMessageBox.askyesno("Confirm", "A timeout of {0} minutes is already set for {1}."
-                                "\n Would you like to replace it with {2} minutes?" .format(self.timer_dict[key]['timeout'], 
+                                "\n Would you like to replace it with {2} minutes?" .format(self.timer_dict[key]['timeout'],
                                     self.timer_dict[key]['sequence'], time))
                             #if yes
                             #changes time and skips creation of new timer
@@ -1625,14 +1957,14 @@ class Application(tk.Frame):
                     self.timer_dict[openkey] = {
                      'sequence' : self.sequence_name_label.cget("text"),
                      'timeout' : time}
-            
+
                     #adds the sequence to the queue
                     self.multi_seq_list_copy.append(self.timer_dict[openkey]['sequence'])
 
     #reject anything but numbers in the input
     #not currently used
     def ValidateIfNum(self, user_input, new_value, widget_name):
-        
+
         valid = new_value == '' or new_value.isdigit()
         # now that we've ensured the input is only integers, range checking!
         if valid:
@@ -1645,7 +1977,7 @@ class Application(tk.Frame):
         if not valid:
             root.bell()
         return valid
-   
+
 root = tk.Tk()
 app = Application(master=root)
 try:
