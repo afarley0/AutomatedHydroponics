@@ -575,10 +575,6 @@ class Application(tk.Frame):
         testVar = auto_state.get()
         print(testVar)
 
-
-        self.info_send = tk.Button(fluids_frame, text="Submit Fluid Information", command=self.sendall(auto_state), width=20)
-        self.info_send.grid(column=0,row=12,pady=10,sticky="e",rowspan=2)
-
         #create labels within fluid frame
         self.time_label = tk.Label(fluids_frame, text="Time of Automatic Watering:")
         self.time_label.grid(column=3,row=0,sticky='e')
@@ -698,8 +694,15 @@ class Application(tk.Frame):
         self.entryz3e4 = tk.Entry(fluids_frame, width=10)
         self.entryz3e4.grid(column=2,row=11,sticky='w')
 
+        timecombo = self.time_combo.get()
 
-    def sendall(self, auto_state):
+        #self.info_send = tk.Button(fluids_frame, text="Submit Fluid Information", command=self.sendall(auto_state), width=20)
+        #self.info_send.grid(column=0,row=12,pady=10,sticky="e",rowspan=2)
+
+        self.info_send = tk.Button(fluids_frame, text="Submit Fluid Information", command=lambda: self.sendall(auto_state,timecombo), width=20)
+        self.info_send.grid(column=0,row=12,pady=10,sticky="e",rowspan=2)
+
+    def sendall(self, auto_state, time_combo):
     #HELP: NEED TO GET VALUE FROM CHECKBOX
     #IF DEF IS OUTSIDE DEF CREATE_WIDGETS, DOES NOT RECOGNIZE VARIABLES FOR CHECKBOX, TIME COMBO, ETC
     #IF DEF IS INSIDE DEF CREATE_WIDGETS, SELF TAKES AT LEAST THREE ARGUMENTS ERROR
@@ -708,7 +711,7 @@ class Application(tk.Frame):
     #NEEDS TO SEND ALL VOLUMES AND TANK DESIGNATION TO VARIABLES, CHECK AND START AUTOMATIC WATERING
     #VOLUME FROM ENTRY BOXES, TANKS FROM COMBO BOXES, TIME FROM COMBO BOX
         print("Sent")
-        '''
+
         #testVar = auto_state.get()
     #TEST FOR AUTOMATIC WATERING
     #LOOP SOMEWHERE?
@@ -718,11 +721,12 @@ class Application(tk.Frame):
     #NEED TO MAKE LOOP
     #MAKE SURE IT ONLY CHECKS TIME ONCE A MINUTE?
         #print(timeVariable)
-        if self.auto_state.get() == 0:
+        if auto_state == 0:
             print("test")
             if systemTime == timeVariable:
             #SEND COMMAND TO ARDUINO FOR WATERING SEQUENCE HERE
                 print('Yes')
+
 
         #VALUES TO SEND TO ARDUINO FOR FLUID VOLUMES
         z1e1_volume = self.entryz1e1.get()
@@ -760,7 +764,6 @@ class Application(tk.Frame):
         print(z1e3_tank)
         print(z1e4_tank)
 
-            '''
 
     def zero(self):
         #CALL ZERO LOAD CELL FUNCTION
@@ -791,6 +794,23 @@ class Application(tk.Frame):
 
     def z1e2(self):
         print("Watering Zone 1: Emitter 2")
+
+        z1e1_volume = self.entryz1e1.get()
+        z1e2_volume = self.entryz1e2.get()
+        z1e3_volume = self.entryz1e3.get()
+        z1e4_volume = self.entryz1e4.get()
+        z2e1_volume = self.entryz2e1.get()
+        z2e2_volume = self.entryz2e2.get()
+        z2e3_volume = self.entryz2e3.get()
+        z2e4_volume = self.entryz2e4.get()
+        z3e1_volume = self.entryz3e1.get()
+        z3e2_volume = self.entryz3e2.get()
+        z3e3_volume = self.entryz3e3.get()
+        z3e4_volume = self.entryz3e4.get()
+        print(z1e1_volume)
+        print(z1e2_volume)
+        print(z1e3_volume)
+        print(z1e4_volume)
 
         z1e1_tank = self.comboz1e1.get()
         z1e2_tank = self.comboz1e2.get()
