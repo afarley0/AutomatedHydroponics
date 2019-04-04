@@ -1,6 +1,12 @@
 /* MAIN CODE FOR ARDUINOS
   STILL NEEDS: FLOW SENSOR FUNCTION, LOAD CELL READING AND TRANSMITTING, LOAD CELL ZEROING
 */
+
+#include "HX711.h"
+#include <EEPROM.h>
+#include <config.h>
+#include <HX711_ADC.h>
+
 /* The Valve class encorporates all of the valves on the manifold, can also work for pump*/
 class Valve{
   int pinOutput; //which pin will be toggled
@@ -13,7 +19,7 @@ class Valve{
     valveChar = inputChar; //sets the specific valve
     stat = false; //it starts off
     subzone = inputSubzone;
-    pinMode(pinOutput, OUTPUT); //that pin outpus
+    pinMode(pinOutput, OUTPUT); //that pin outputs
   }
   void on(){ 
     digitalWrite(pinOutput,HIGH); //turns the valve on
@@ -23,53 +29,62 @@ class Valve{
     digitalWrite(pinOutput,LOW); //turns the valve off
     stat = false;
   }
-  boolean getStat(){
+  boolean getStat(){ //gets the status of valve
     return stat;
   }
-  int getSubzone(){
+  int getSubzone(){ //returns subzone
     return subzone;
   }
 }; 
 
 /*The LoadCells class zeros, reads, prints, all of the data pertaining to all of the load cells*/
 class LoadCells{
-    int loadCellAmount; //
-    float loadCellReading[];
-    int loadCellPins[];
-    int loadCellOffset[];
-    int loadCellCali[];
+    int loadCellAmount; //how many load cells are we reading
+    float loadCellReading[]; //what are the readings
+    byte loadCellPins[]; //what pins are we reading from
+    byte loadCellClock; //what is the clock pin
+    int loadCellOffset[]; //what is the voltage offset
+    int loadCellCali[]; //what is voltage calibrated gain
+    HX711 scale[]; //initializes the load cell scale using the HX711 library
     public:
-    LoadCells(int pinsForLoadCells[],int offsetForLoadCell[], int caliForLoadCell[]){
-      loadCellAmount = sizeof(pinsForLoadCells);
-      loadCellPins[loadCellAmount];
-      loadCellReading[loadCellAmount];
-      loadCellOffset[loadCellAmount];      
-      loadCellCali[loadCellAmount];
-      for(int i = 0; i<loadCellAmount; i++){
-        loadCellPins[i] = pinsForLoadCells[i];
-        pinMode(loadCellPins[i], INPUT);
-      }
-      for(int i = 0; i<loadCellAmount; i++){
-        loadCellOffset[i] = offsetForLoadCell[i];
-      }
-      for(int i = 0; i<loadCellAmount; i++){
-        loadCellCali[i] = caliForLoadCell[i];
-      }
-    }
-    void setLoadCellPins(int pinsForLoadCells[]){
-      for(int i = 0; i<loadCellAmount; i++){
-        loadCellPins[i] = pinsForLoadCells[i];
-        pinMode(loadCellPins[i], INPUT);
-      }
-    }
-    void zeroLoadCells(){
+    LoadCells(byte pinsForLoadCell[],int offsetForLoadCell[], int caliForLoadCell[],byte clockForLoadCell){
+      loadCellAmount = sizeof(pinsForLoadCell); //sets load cell amount
+      loadCellPins[loadCellAmount]; //sets size for pin array
+      loadCellReading[loadCellAmount]; //sets size for reading array
+      loadCellOffset[loadCellAmount]; //sets size for offset array
+      loadCellCali[loadCellAmount]; //sets size for calibration array
+      scale[loadCellAmount]; //sets size for scale array
+      loadCellClock = clockForLoadCell; //sets clock pin
+      pinMode(loadCellClock, OUTPUT);
       
+      for(int i = 0; i<loadCellAmount; i++){ 
+        loadCellPins[i] = pinsForLoadCell[i]; // sets each individual pin
+        loadCellOffset[i] = offsetForLoadCell[i]; // sets each individual offset
+        loadCellCali[i] = caliForLoadCell[i]; // sets each individual calibration
+        //pinMode(loadCellPins[i], INPUT); //POSSIBLY REMOVE?
+        scale[i].begin(loadCellPins[i],loadCellClock); //initializes each scale
+        scale[i].set_scale(loadCellCali[i]); //sets the scale calibration
+        scale[i].set_offset(loadCellOffset[i]); //sets the scale offset
+      }
     }
-    void readLoadCells(){
+    void setLoadCellPins(byte pinsForLoadCell[]){ //sets each individual load cell pin and amount
+      loadCellAmount = sizeof(pinsForLoadCell);
+      for(int i = 0; i<loadCellAmount; i++){
+        loadCellPins[i] = pinsForLoadCell[i];
+        pinMode(loadCellPins[i], INPUT);
+      }
+    }
+    void zeroLoadCells(){ //TO BE DONE!
+      for(int i = 0; i < loadCellAmount;i++){
+        scale[i].tare(); //should work?
+      }
+    }
+    void readLoadCells(){ // Reads each individual load cell and prints
       int voltageReading[loadCellAmount];
       for(int i = 0; i < loadCellAmount;i++){
-        voltageReading[i] = digitalRead(loadCellPins[i]);
-        loadCellReading[i] = voltageReading[i]*loadCellCali[i]+loadCellOffset[i];
+        loadCellReading[i] = scale[i].read_average(5);//scale[i].get_units();
+        //voltageReading[i] = digitalRead(loadCellPins[i]); //DELETE?
+        //loadCellReading[i] = voltageReading[i]*loadCellCali[i]+loadCellOffset[i]; //DELETE?
         Serial.println(loadCellReading[i],3);
       }
     }
@@ -149,7 +164,7 @@ class FlowSensor {
   }
   void readingVolume(int neededVolume){
     //reads the volume
-    useInterrupt(true);
+    useInterrupt(true); //allows interrupt
     while(neededVolume <= readVolume){
       Serial.print("Freq: "); Serial.println(getFlowRate());
       Serial.print("Pulses: "); Serial.println(getPulses(), DEC);
@@ -164,36 +179,38 @@ class FlowSensor {
       liters /= 60.0;
     
       Serial.print(liters); Serial.println(" Liters");
-      delay(100);
+      delay(100); //CONSIDER REPLACING WITH MILLIS() APPROACH
     }
-    useInterrupt(false);
+    useInterrupt(false); //UN-allows interrupt
   }
 };
 
 
 
-//pins for all the load cells
-static int loadCellPinInputs[] = {15, 16 ,17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42};
-static int offsetCellPinInputs[] = {15, 16 ,17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42};
-static int caliCellPinInputs[] = {15, 16 ,17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42};
+//read pins, offset, calibration factors, and clock pin for all the load cells
+//HARD CODED TEMPORARILY
+static byte loadCellClockInput = 17;
+static byte loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
+static int offsetCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int caliCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 
 /*all the valves, flow sensors, pumps, and load cells initialize*/
-Valve pump(52,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
-Valve waterValveA1(51,0,'t'); //Tank A1 valve; Water Tank
-Valve tankValveA2(50,1,'t'); //Tank A2 valve;
-Valve tankValveA3(49,2,'t'); //Tank A3 valve;
-Valve tankValveA4(48,3,'t'); //Tank A4 valve;
+Valve pump(21,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
+Valve tankValveA(22,0,'t'); //Tank A1 valve; Water Tank
+Valve tankValveB(23,1,'t'); //Tank A2 valve;
+Valve tankValveC(24,2,'t'); //Tank A3 valve;
+Valve tankValveD(25,3,'t'); //Tank A4 valve;
+ 
+Valve emitterValveA(17,1,'e'); //Emitter A; Subzone 1
+Valve emitterValveB(18,2,'e'); //Emitter B; Subzone 2
+Valve emitterValveC(19,3,'e'); //Emitter C; Subzone 3
+Valve emitterValveD(20,4,'e'); //Emitter D; Subzone 4
 
-Valve emitterValveA(47,1,'e'); //Emitter A; Subzone 1
-Valve emitterValveB(46,2,'e'); //Emitter B; Subzone 2
-Valve emitterValveC(45,3,'e'); //Emitter C; Subzone 3
-Valve emitterValveD(44,4,'e'); //Emitter D; Subzone 4
+FlowSensor flow(16);// sets up the flow sensor
 
-FlowSensor flow(43);// sets up the flow sensor
-
-LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs);
+LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
 
 /* PIN INTERRUPT FOR FLOW SENSOR*/
 SIGNAL(TIMER0_COMPA_vect) {
@@ -241,6 +258,9 @@ void readData()
       int subzoneToWater = Serial.parseInt(); //sets subzone to water
       int volumeToWater =  Serial.parseInt(); //sets how much total water is needed; INDIVIDUAL WATER MUST BE SET IN PYTHON
       Serial.println("Subzone Watered"); //confirms subzones watered
+      flow.setNeededVolume(volumeToWater); //sets the volume;
+      waterSubzone(subzoneToWater); //watering
+
     }
     else if (go.equals("zeroLoadCells")){ //zeros all of the load cells
       Serial.println("Load Cells Zeroed"); //confirms load cell zeroing
@@ -249,6 +269,7 @@ void readData()
     else if (go.equals("readLoadCells")){ //read loads and returns array of readings
       loadCells.readLoadCells();
       Serial.println("Load Cells Read"); //confirms load cells read
+      loadCells.readLoadCells();
     }
     else{ //anything else
       Serial.println("Error");
@@ -270,77 +291,85 @@ void waterSubzone(int subzoneToWater){
     case 1:
       //Watering the first subzone
       //turns on valve A2, emitter A, and pump
-      tankValveA2.on();
+      tankValveB.on();
       emitterValveA.on();
       pump.on();
       //reads the volume from the flow meter
-      flow.readingVolume(flow.getVolume());
+      //flow.readingVolume(flow.getVolume()); FIX
+      delay(5000);
       pump.off();
       //Flushes the Subzone
-      waterValveA1.on();
-      tankValveA2.off();
+      tankValveA.on();
+      tankValveB.off();
       pump.on();
-      flow.readingVolume(500); //adjustable flush volume
+      //flow.readingVolume(500); //adjustable flush volume
+      delay(5000);
       //SHUT OFF
       pump.off();
-      waterValveA1.off();
+      tankValveA.off();
       emitterValveA.off();
       break;
     case 2:
       //Watering the second subzone
       //turns on valve A3, emitter B, and pump
-      tankValveA3.on();
+      tankValveC.on();
       emitterValveB.on();
       pump.on();
       //reads the volume from the flow meter
-      flow.readingVolume(flow.getVolume());
+      //flow.readingVolume(flow.getVolume());
+      delay(5000);
       pump.off();
       //Flushes the Subzone
-      waterValveA1.on();
-      tankValveA3.off();
+      tankValveA.on();
+      tankValveC.off();
       pump.on();
-      flow.readingVolume(500); //adjustable flush volume
+      //flow.readingVolume(500); //adjustable flush volume
+      delay(5000);
       //SHUT OFF
       pump.off();
-      waterValveA1.off();
+      tankValveA.off();
       emitterValveB.off();
       break;
     case 3:
       //Watering the third subzone
       //turns on valve A4, emitter C, and pump
-      tankValveA4.on();
+      tankValveD.on();
       emitterValveC.on();
       pump.on();
       //reads the volume from the flow meter
-      flow.readingVolume(flow.getVolume());
+      //flow.readingVolume(flow.getVolume());
+      delay(5000);
       pump.off();
       //Flushes the Subzone
-      waterValveA1.on();
-      tankValveA4.off();
+      tankValveA.on();
+      tankValveD.off();
       pump.on();
-      flow.readingVolume(500); //adjustable flush volume
+      //flow.readingVolume(500); //adjustable flush volume
+      delay(5000);
       //SHUT OFF
       pump.off();
-      waterValveA1.off();
+      tankValveA.off();
       emitterValveC.off();
       break;
     case 4:
       //Watering the fourth subzone
       //turns on valve A4, emitter D, and pump
-      tankValveA4.on();
+      tankValveD.on();
       emitterValveD.on();
       pump.on();
       //reads the volume from the flow meter
-      flow.readingVolume(flow.getVolume());
+      //flow.readingVolume(flow.getVolume());
+      delay(5000);
       pump.off();
       //Flushes the Subzone
-      waterValveA1.on();
-      tankValveA4.off();
+      tankValveA.on();
+      tankValveD.off();
       pump.on();
-      flow.readingVolume(500); //adjustable flush volume
+      //flow.readingVolume(500); //adjustable flush volume
+      delay(5000);
       //SHUT OFF
       pump.off();
-      waterValveA1.off();
+      tankValveA.off();
       emitterValveD.off();
       break;
   }
