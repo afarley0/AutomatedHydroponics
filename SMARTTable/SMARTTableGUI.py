@@ -566,14 +566,11 @@ class Application(tk.Frame):
         self.zero_button = tk.Button(fluids_frame, text="Zero Load Cells", command=self.zero)
         self.zero_button.grid(column=3,row=12,pady=5,sticky="e")
 
-        #auto_state = tk.BooleanVar()
-        #auto_state.set(False)
+        #check button variable
         auto_state = tk.IntVar()
         #place check button in fluid frame
         self.auto_check = tk.Checkbutton(fluids_frame, text="Automatic Watering", variable=auto_state)
         self.auto_check.grid(column=3,row=2,sticky='e')
-        testVar = auto_state.get()
-        print(testVar)
 
         #create labels within fluid frame
         self.time_label = tk.Label(fluids_frame, text="Time of Automatic Watering:")
@@ -694,38 +691,38 @@ class Application(tk.Frame):
         self.entryz3e4 = tk.Entry(fluids_frame, width=10)
         self.entryz3e4.grid(column=2,row=11,sticky='w')
 
+        #get time combo box value for send function
         timecombo = self.time_combo.get()
 
-        #self.info_send = tk.Button(fluids_frame, text="Submit Fluid Information", command=self.sendall(auto_state), width=20)
-        #self.info_send.grid(column=0,row=12,pady=10,sticky="e",rowspan=2)
-
-        self.info_send = tk.Button(fluids_frame, text="Submit Fluid Information", command=lambda: self.sendall(auto_state,timecombo), width=20)
+        #sending fluid info button
+        self.info_send = tk.Button(fluids_frame, text="Submit Fluid Information", command=lambda: self.sendall(auto_state.get(),self.time_combo.get()), width=20)
         self.info_send.grid(column=0,row=12,pady=10,sticky="e",rowspan=2)
 
     def sendall(self, auto_state, time_combo):
-    #HELP: NEED TO GET VALUE FROM CHECKBOX
-    #IF DEF IS OUTSIDE DEF CREATE_WIDGETS, DOES NOT RECOGNIZE VARIABLES FOR CHECKBOX, TIME COMBO, ETC
-    #IF DEF IS INSIDE DEF CREATE_WIDGETS, SELF TAKES AT LEAST THREE ARGUMENTS ERROR
-    #MAKE CLASS FOR CHECKBOX?
 
     #NEEDS TO SEND ALL VOLUMES AND TANK DESIGNATION TO VARIABLES, CHECK AND START AUTOMATIC WATERING
     #VOLUME FROM ENTRY BOXES, TANKS FROM COMBO BOXES, TIME FROM COMBO BOX
         print("Sent")
-
+        #auto_state = self.auto_check.get() #NEED TO MAKE SURE CHECKBOX VALUE UPDATES
         #testVar = auto_state.get()
     #TEST FOR AUTOMATIC WATERING
     #LOOP SOMEWHERE?
     #systemTime = time.strftime("%Y %m %d %H %M", time.localtime())
         systemTime = datetime.datetime.now().strftime("%H:%M")
-        timeVariable = self.time_combo.get()
+        timeVariable = time_combo
+        print(timeVariable)
+        
     #NEED TO MAKE LOOP
     #MAKE SURE IT ONLY CHECKS TIME ONCE A MINUTE?
         #print(timeVariable)
         if auto_state == 0:
-            print("test")
+            print("test0")
             if systemTime == timeVariable:
             #SEND COMMAND TO ARDUINO FOR WATERING SEQUENCE HERE
                 print('Yes')
+
+        if auto_state == 1:
+            print("test1")
 
 
         #VALUES TO SEND TO ARDUINO FOR FLUID VOLUMES
@@ -767,13 +764,9 @@ class Application(tk.Frame):
 
     def zero(self):
         #CALL ZERO LOAD CELL FUNCTION
-        msgBox = tk.tkMessageBox.askyesnocancel('Confirmation Window','Are you sure?')
-        if msgBox=='yes':
-            root.destroy()
-            #SEND COMMAND TO ARDUINO TO CALL ZERO FUNCTION
-        else:
-            print("Canceled")
-        print("Zero")
+        #msgBox = tkMessageBox.askyesno('Confirmation Window','Are you sure?')
+        if tkMessageBox.askyesno('Confirmation Window','Are you sure?'):
+            print("Zero")
 
     def z1e1(self):
         msgBox = tk.tkMessageBox.askyesnocancel('Confirmation Window','Start Watering Sequence?')
