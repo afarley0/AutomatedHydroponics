@@ -28,6 +28,8 @@ sequenceindex = 0
 photocounter = 1
 cam_index = 0
 
+ser1 = serial.Serial(port='COM6', baudrate=9600, timeout=1)
+ser1.close()
 '''
 #connects to the proper serial port using pyserial
 ser = serial.Serial(
@@ -711,7 +713,7 @@ class Application(tk.Frame):
         systemTime = datetime.datetime.now().strftime("%H:%M")
         timeVariable = time_combo
         print(timeVariable)
-        
+
     #NEED TO MAKE LOOP
     #MAKE SURE IT ONLY CHECKS TIME ONCE A MINUTE?
         #print(timeVariable)
@@ -768,15 +770,33 @@ class Application(tk.Frame):
         if tkMessageBox.askyesno('Confirmation Window','Are you sure?'):
             print("Zero")
 
+    def getValues(self):
+        ser1.write(b'g')
+        data = ser1.readline().decode().split('\r\n')
+
+
+        return data[0]
+
     def z1e1(self):
-        msgBox = tk.tkMessageBox.askyesnocancel('Confirmation Window','Start Watering Sequence?')
-        if msgBox=='yes':
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
             z1e1_volume = self.entryz1e1.get()
             z1e1_tank = self.comboz1e1.get()
+            print('test')
             ser1.open()
-            ser1.write('z1e1') #INFO FOR VOLUME AND TANK, SEND PROPER COMMAND
-            output = ser1.readline().decode().split('\r\n')
-            time.sleep(10)
+            numpoints = 1
+            for i in range(0,numpoints):
+
+                datalist = [0]*numpoints
+                data = self.getValues()
+                data = int(float(data))
+                datalist[i] = data
+                dataAvg = sum(dataList)/numpoints
+            #ser1.write(b'g') #INFO FOR VOLUME AND TANK, SEND PROPER COMMAND
+            #output = ser1.readline().decode().split('\r\n')
+            #output = self.getValues()
+            #output = int(output[0])
+            print(datalist)
+            time.sleep(2)
             ser1.close()
             #OPEN SERIAL PORT AND SEND COMMAND TO WATER
             #ASSIGN TANK DESIGNATION AND VOLUME TO VARIABLES
