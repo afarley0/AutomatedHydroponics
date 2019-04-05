@@ -28,8 +28,9 @@ sequenceindex = 0
 photocounter = 1
 cam_index = 0
 
-ser1 = serial.Serial(port='COM6', baudrate=9600, timeout=1)
-ser1.close()
+ser1 = serial.Serial(port='COM8', baudrate=9600, timeout=1)
+#ser1.open()
+#ser1.close()
 '''
 #connects to the proper serial port using pyserial
 ser = serial.Serial(
@@ -252,6 +253,23 @@ class Thread_Timer(threading.Thread):
 #        #place check button in fluid frame
 #        self.auto_check = tk.Checkbutton(fluids_frame, text="Automatic Watering", variable=auto_state)
 #        self.auto_check.grid(column=3,row=2,sticky='e')
+
+class Fluids_Water(tk.Frame):
+    #def __init__(self):
+
+
+    def subzone_Water(self,zone,subzone,tank,volume):
+        if zone == 1:
+            #OPEN SERIAL 1 AND SEND INFO
+            print(subzone)
+            print(tank)
+            print(volume)
+        elif zone == 2:
+            #OPEN SERIAL 2 AND SEND INFO
+            print(2)
+        elif zone == 3:
+            #OPEN SERIAL 3 AND SEND INFO
+            print(3)
 
 
 #main class
@@ -769,6 +787,7 @@ class Application(tk.Frame):
         #msgBox = tkMessageBox.askyesno('Confirmation Window','Are you sure?')
         if tkMessageBox.askyesno('Confirmation Window','Are you sure?'):
             print("Zero")
+            #SERIAL PRINT ZERO COMMAND
 
     def getValues(self):
         ser1.write(b'g')
@@ -782,15 +801,14 @@ class Application(tk.Frame):
             z1e1_volume = self.entryz1e1.get()
             z1e1_tank = self.comboz1e1.get()
             print('test')
-            ser1.open()
+
             numpoints = 1
             for i in range(0,numpoints):
-
                 datalist = [0]*numpoints
                 data = self.getValues()
                 data = int(float(data))
                 datalist[i] = data
-                dataAvg = sum(dataList)/numpoints
+                dataAvg = sum(datalist)/numpoints
             #ser1.write(b'g') #INFO FOR VOLUME AND TANK, SEND PROPER COMMAND
             #output = ser1.readline().decode().split('\r\n')
             #output = self.getValues()
@@ -806,70 +824,92 @@ class Application(tk.Frame):
         print("Watering Zone 1: Emitter 1")
 
     def z1e2(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z1e2_volume = self.entryz1e2.get()
+            z1e2_tank = self.comboz1e2.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z1e2_tank,z1e2_volume)
+
         print("Watering Zone 1: Emitter 2")
 
-        z1e1_volume = self.entryz1e1.get()
-        z1e2_volume = self.entryz1e2.get()
-        z1e3_volume = self.entryz1e3.get()
-        z1e4_volume = self.entryz1e4.get()
-        z2e1_volume = self.entryz2e1.get()
-        z2e2_volume = self.entryz2e2.get()
-        z2e3_volume = self.entryz2e3.get()
-        z2e4_volume = self.entryz2e4.get()
-        z3e1_volume = self.entryz3e1.get()
-        z3e2_volume = self.entryz3e2.get()
-        z3e3_volume = self.entryz3e3.get()
-        z3e4_volume = self.entryz3e4.get()
-        print(z1e1_volume)
-        print(z1e2_volume)
-        print(z1e3_volume)
-        print(z1e4_volume)
-
-        z1e1_tank = self.comboz1e1.get()
-        z1e2_tank = self.comboz1e2.get()
-        z1e3_tank = self.comboz1e3.get()
-        z1e4_tank = self.comboz1e4.get()
-        z2e1_tank = self.comboz2e1.get()
-        z2e2_tank = self.comboz2e2.get()
-        z2e3_tank = self.comboz2e3.get()
-        z2e4_tank = self.comboz2e4.get()
-        z3e1_tank = self.comboz3e1.get()
-        z3e2_tank = self.comboz3e2.get()
-        z3e3_tank = self.comboz3e3.get()
-        z3e4_tank = self.comboz3e4.get()
-        print(z1e1_tank)
-        print(z1e2_tank)
-        print(z1e3_tank)
-        print(z1e4_tank)
-
     def z1e3(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z1e3_volume = self.entryz1e3.get()
+            z1e3_tank = self.comboz1e3.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z1e3_tank,z1e3_volume)
         print("Watering Zone 1: Emitter 3")
 
     def z1e4(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z1e4_volume = self.entryz1e4.get()
+            z1e4_tank = self.comboz1e4.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z1e4_tank,z1e4_volume)
         print("Watering Zone 1: Emitter 4")
 
     def z2e1(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z2e1_volume = self.entryz2e1.get()
+            z2e1_tank = self.comboz2e1.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z2e1_tank,z2e1_volume)
         print("Watering Zone 2: Emitter 1")
 
     def z2e2(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z2e2_volume = self.entryz2e2.get()
+            z2e2_tank = self.comboz2e2.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z2e2_tank,z2e2_volume)
         print("Watering Zone 2: Emitter 2")
 
     def z2e3(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z2e3_volume = self.entryz2e3.get()
+            z2e3_tank = self.comboz2e3.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z2e3_tank,z2e3_volume)
         print("Watering Zone 2: Emitter 3")
 
     def z2e4(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z2e4_volume = self.entryz2e4.get()
+            z2e4_tank = self.comboz2e4.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z2e4_tank,z2e4_volume)
         print("Watering Zone 2: Emitter 4")
 
     def z3e1(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z3e1_volume = self.entryz3e1.get()
+            z3e1_tank = self.comboz3e1.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z3e1_tank,z3e1_volume)
         print("Watering Zone 3: Emitter 1")
 
     def z3e2(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z3e2_volume = self.entryz3e2.get()
+            z3e2_tank = self.comboz3e2.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z3e2_tank,z3e2_volume)
         print("Watering Zone 3: Emitter 2")
 
     def z3e3(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z3e3_volume = self.entryz3e3.get()
+            z3e3_tank = self.comboz3e3.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z3e3_tank,z3e3_volume)
         print("Watering Zone 3: Emitter 3")
 
     def z3e4(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z3e4_volume = self.entryz3e4.get()
+            z3e4_tank = self.comboz3e4.get()
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,1,2,z3e4_tank,z3e4_volume)
         print("Watering Zone 3: Emitter 4")
 
     def output_excel(filename):
