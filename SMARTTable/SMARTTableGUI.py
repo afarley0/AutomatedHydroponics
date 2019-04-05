@@ -801,7 +801,7 @@ class Application(tk.Frame):
             z1e1_volume = self.entryz1e1.get()
             z1e1_tank = self.comboz1e1.get()
             print('test')
-
+            #ser1.open()
             numpoints = 1
             for i in range(0,numpoints):
                 datalist = [0]*numpoints
