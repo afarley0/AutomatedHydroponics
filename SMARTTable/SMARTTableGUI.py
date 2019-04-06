@@ -28,7 +28,7 @@ sequenceindex = 0
 photocounter = 1
 cam_index = 0
 
-ser1 = serial.Serial(port='COM8', baudrate=9600, timeout=1)
+#ser1 = serial.Serial(port='COM8', baudrate=9600, timeout=1)
 #ser1.open()
 #ser1.close()
 '''
@@ -789,9 +789,10 @@ class Application(tk.Frame):
             print("Zero")
             #SERIAL PRINT ZERO COMMAND
 
-    def getValues(self):
-        ser1.write(b'g')
-        data = ser1.readline().decode().split('\r\n')
+    def getValues(self,serial):
+        sertest = serial
+        sertest.write(b'g')
+        data = sertest.readline().decode().split('\r\n')
 
 
         return data[0]
@@ -802,11 +803,12 @@ class Application(tk.Frame):
             z1e1_tank = self.comboz1e1.get()
             print('test')
             #ser1.close()
-            ser1 = serial.Serial(port='COM8', baudrate=9600, timeout=1)
+            sertest = serial.Serial(port='COM3', baudrate=9600, timeout=1)
+            time.sleep(1)
             numpoints = 1
             for i in range(0,numpoints):
                 datalist = [0]*numpoints
-                data = self.getValues()
+                data = self.getValues(sertest)
                 print(type(data))
                 data = int(float(data))
                 datalist[i] = data
@@ -817,7 +819,7 @@ class Application(tk.Frame):
             #output = int(output[0])
             print(datalist)
             time.sleep(2)
-            ser1.close()
+            sertest.close()
             #ser1.open()
             #OPEN SERIAL PORT AND SEND COMMAND TO WATER
             #ASSIGN TANK DESIGNATION AND VOLUME TO VARIABLES
@@ -828,11 +830,30 @@ class Application(tk.Frame):
 
     def z1e2(self):
         if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            #ser1.close()
+            sertest = serial.Serial(port='COM4', baudrate=9600, timeout=1)
+            time.sleep(1)
+            numpoints = 1
+            for i in range(0,numpoints):
+                datalist = [0]*numpoints
+                data = self.getValues(sertest)
+                print(type(data))
+                data = int(float(data))
+                datalist[i] = data
+                dataAvg = sum(datalist)/numpoints
+            #ser1.write(b'g') #INFO FOR VOLUME AND TANK, SEND PROPER COMMAND
+            #output = ser1.readline().decode().split('\r\n')
+            #output = self.getValues()
+            #output = int(output[0])
+            print(datalist)
+            time.sleep(2)
+            sertest.close()
+            '''
             z1e2_volume = self.entryz1e2.get()
             z1e2_tank = self.comboz1e2.get()
             f = Fluids_Water()
             Fluids_Water.subzone_Water(f,1,2,z1e2_tank,z1e2_volume)
-
+            '''
         print("Watering Zone 1: Emitter 2")
 
     def z1e3(self):
