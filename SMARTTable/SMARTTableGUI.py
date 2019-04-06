@@ -801,11 +801,13 @@ class Application(tk.Frame):
             z1e1_volume = self.entryz1e1.get()
             z1e1_tank = self.comboz1e1.get()
             print('test')
-            #ser1.open()
+            #ser1.close()
+            ser1 = serial.Serial(port='COM8', baudrate=9600, timeout=1)
             numpoints = 1
             for i in range(0,numpoints):
                 datalist = [0]*numpoints
                 data = self.getValues()
+                print(type(data))
                 data = int(float(data))
                 datalist[i] = data
                 dataAvg = sum(datalist)/numpoints
@@ -816,6 +818,7 @@ class Application(tk.Frame):
             print(datalist)
             time.sleep(2)
             ser1.close()
+            #ser1.open()
             #OPEN SERIAL PORT AND SEND COMMAND TO WATER
             #ASSIGN TANK DESIGNATION AND VOLUME TO VARIABLES
             #GET VOLUME AND TANK FROM BOXES
