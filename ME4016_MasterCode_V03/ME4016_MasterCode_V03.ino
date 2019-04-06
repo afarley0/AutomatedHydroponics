@@ -20,6 +20,7 @@ class Valve{
     stat = false; //it starts off
     subzone = inputSubzone;
     pinMode(pinOutput, OUTPUT); //that pin outputs
+    digitalWrite(pinOutput,LOW);
   }
   void on(){ 
     digitalWrite(pinOutput,HIGH); //turns the valve on
@@ -56,6 +57,7 @@ class LoadCells{
       scale[loadCellAmount]; //sets size for scale array
       loadCellClock = clockForLoadCell; //sets clock pin
       pinMode(loadCellClock, OUTPUT);
+      digitalWrite(loadCellClock,LOW);
       
       for(int i = 0; i<loadCellAmount; i++){ 
         loadCellPins[i] = pinsForLoadCell[i]; // sets each individual pin
@@ -72,6 +74,7 @@ class LoadCells{
       for(int i = 0; i<loadCellAmount; i++){
         loadCellPins[i] = pinsForLoadCell[i];
         pinMode(loadCellPins[i], INPUT);
+        digitalWrite(loadCellPins[i],LOW);
       }
     }
     void zeroLoadCells(){ //TO BE DONE!
@@ -80,9 +83,10 @@ class LoadCells{
       }
     }
     void readLoadCells(){ // Reads each individual load cell and prints
+      Serial.println("1");
       int voltageReading[loadCellAmount];
       for(int i = 0; i < loadCellAmount;i++){
-        loadCellReading[i] = scale[i].read_average(5);//scale[i].get_units();
+        //loadCellReading[i] = scale[i].read_average(5);//scale[i].get_units();
         //voltageReading[i] = digitalRead(loadCellPins[i]); //DELETE?
         //loadCellReading[i] = voltageReading[i]*loadCellCali[i]+loadCellOffset[i]; //DELETE?
         Serial.println(loadCellReading[i],3);
@@ -195,7 +199,6 @@ static int offsetCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 static int caliCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
-
 /*all the valves, flow sensors, pumps, and load cells initialize*/
 Valve pump(21,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
 Valve tankValveA(22,0,'t'); //Tank A1 valve; Water Tank
@@ -210,8 +213,7 @@ Valve emitterValveD(20,4,'e'); //Emitter D; Subzone 4
 
 FlowSensor flow(16);// sets up the flow sensor
 
-LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
-
+//LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
 /* PIN INTERRUPT FOR FLOW SENSOR*/
 SIGNAL(TIMER0_COMPA_vect) {
   uint8_t x = digitalRead(flow.getPin());
@@ -232,20 +234,17 @@ SIGNAL(TIMER0_COMPA_vect) {
 }
 
 
-
 void setup() 
 {
   Serial.begin(9600); //begins usb serial connection
-  
+  Serial.println('1');
 }
 
 void loop(){
-  if(false){ //to be changed
-    //other items
-  }
-  else{ //read serial data from PYTHON
-    readData();
-  }
+  Serial.println('9');
+  readData();
+  
+  
 }
 
 /*reads the data taken from the usb serial connection*/
@@ -264,12 +263,11 @@ void readData()
     }
     else if (go.equals("zeroLoadCells")){ //zeros all of the load cells
       Serial.println("Load Cells Zeroed"); //confirms load cell zeroing
-      loadCells.zeroLoadCells();
+      //loadCells.zeroLoadCells();
     }
     else if (go.equals("readLoadCells")){ //read loads and returns array of readings
-      loadCells.readLoadCells();
+      //loadCells.readLoadCells();
       Serial.println("Load Cells Read"); //confirms load cells read
-      loadCells.readLoadCells();
     }
     else{ //anything else
       Serial.println("Error");
@@ -291,13 +289,16 @@ void waterSubzone(int subzoneToWater){
     case 1:
       //Watering the first subzone
       //turns on valve A2, emitter A, and pump
-      tankValveB.on();
+      tankValveA.on();
       emitterValveA.on();
       pump.on();
       //reads the volume from the flow meter
       //flow.readingVolume(flow.getVolume()); FIX
-      delay(5000);
+      delay(3000);
       pump.off();
+
+      /*
+      
       //Flushes the Subzone
       tankValveA.on();
       tankValveB.off();
@@ -307,71 +308,93 @@ void waterSubzone(int subzoneToWater){
       //SHUT OFF
       pump.off();
       tankValveA.off();
+
+      */
+      tankValveA.off();
       emitterValveA.off();
       break;
     case 2:
-      //Watering the second subzone
-      //turns on valve A3, emitter B, and pump
-      tankValveC.on();
+      //Watering the first subzone
+      //turns on valve A2, emitter A, and pump
+      tankValveB.on();
       emitterValveB.on();
       pump.on();
       //reads the volume from the flow meter
-      //flow.readingVolume(flow.getVolume());
-      delay(5000);
+      //flow.readingVolume(flow.getVolume()); FIX
+      delay(3000);
       pump.off();
+
+      /*
+      
       //Flushes the Subzone
       tankValveA.on();
-      tankValveC.off();
+      tankValveB.off();
       pump.on();
       //flow.readingVolume(500); //adjustable flush volume
       delay(5000);
       //SHUT OFF
       pump.off();
       tankValveA.off();
+
+      */
+      tankValveB.off();
       emitterValveB.off();
       break;
     case 3:
-      //Watering the third subzone
-      //turns on valve A4, emitter C, and pump
-      tankValveD.on();
+      //Watering the first subzone
+      //turns on valve A2, emitter A, and pump
+      tankValveC.on();
       emitterValveC.on();
       pump.on();
       //reads the volume from the flow meter
-      //flow.readingVolume(flow.getVolume());
-      delay(5000);
+      //flow.readingVolume(flow.getVolume()); FIX
+      delay(3000);
       pump.off();
+
+      /*
+      
       //Flushes the Subzone
       tankValveA.on();
-      tankValveD.off();
+      tankValveB.off();
       pump.on();
       //flow.readingVolume(500); //adjustable flush volume
       delay(5000);
       //SHUT OFF
       pump.off();
       tankValveA.off();
+
+      */
+      tankValveC.off();
       emitterValveC.off();
       break;
     case 4:
-      //Watering the fourth subzone
-      //turns on valve A4, emitter D, and pump
+      //Watering the first subzone
+      //turns on valve A2, emitter A, and pump
       tankValveD.on();
       emitterValveD.on();
       pump.on();
       //reads the volume from the flow meter
-      //flow.readingVolume(flow.getVolume());
-      delay(5000);
+      //flow.readingVolume(flow.getVolume()); FIX
+      delay(3000);
       pump.off();
+
+      /*
+      
       //Flushes the Subzone
       tankValveA.on();
-      tankValveD.off();
+      tankValveB.off();
       pump.on();
       //flow.readingVolume(500); //adjustable flush volume
       delay(5000);
       //SHUT OFF
       pump.off();
       tankValveA.off();
+
+      */
+      tankValveD.off();
       emitterValveD.off();
       break;
   }
 }
+
   
