@@ -97,8 +97,8 @@ class LoadCells{
 /*The FlowSensor class takes care of measuring the flow from the pump to the emitters*/
 class FlowSensor {
   int pinInput; //pin will be read
-  int totalNeededVolume; //total volume is needed
-  int readVolume; //what volume has been read
+  float totalNeededVolume; //total volume is needed
+  float readVolume; //what volume has been read
   uint16_t pulses;
   uint8_t lastFlowPinState;
   uint32_t lastFlowRateTimer;
@@ -113,10 +113,16 @@ class FlowSensor {
     flowRate = 0.0;
   }
   
-  void setNeededVolume(int inputVolume){ 
+  void setNeededVolume(float inputVolume){ 
     totalNeededVolume = inputVolume; //sets how much fluid we plan on reading
   }
-  int getVolume(){
+  float getNeededVolume(){ 
+    return totalNeededVolume; //sets how much fluid we plan on reading
+  }
+  void setReadVolume(float inputReadVolume){
+    readVolume = inputReadVolume;
+  }
+  float getReadVolume(){
     return readVolume; //returns how much volume has been read volume 
   }
 
@@ -166,10 +172,11 @@ class FlowSensor {
       TIMSK0 &= ~_BV(OCIE0A);
     }
   }
-  void readingVolume(int neededVolume){
+  void readingVolume(){
     //reads the volume
     useInterrupt(true); //allows interrupt
-    while(neededVolume <= readVolume){
+    long endTime =millis()+30000;
+    while(getNeededVolume() >= getReadVolume() && millis()<= endTime){
       Serial.print("Freq: "); Serial.println(getFlowRate());
       Serial.print("Pulses: "); Serial.println(getPulses(), DEC);
       
@@ -181,7 +188,7 @@ class FlowSensor {
       float liters = getPulses();
       liters /= 7.5;
       liters /= 60.0;
-    
+      setReadVolume(liters);
       Serial.print(liters); Serial.println(" Liters");
       delay(100); //CONSIDER REPLACING WITH MILLIS() APPROACH
     }
@@ -193,7 +200,7 @@ class FlowSensor {
 
 //read pins, offset, calibration factors, and clock pin for all the load cells
 //HARD CODED TEMPORARILY
-static byte loadCellClockInput = 17;
+static byte loadCellClockInput = 16;
 static byte loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
 static int offsetCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static int caliCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -211,7 +218,8 @@ Valve emitterValveB(18,2,'e'); //Emitter B; Subzone 2
 Valve emitterValveC(19,3,'e'); //Emitter C; Subzone 3
 Valve emitterValveD(20,4,'e'); //Emitter D; Subzone 4
 
-FlowSensor flow(16);// sets up the flow sensor
+FlowSensor flow(15);// sets up the flow sensor
+
 
 //LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
 /* PIN INTERRUPT FOR FLOW SENSOR*/
@@ -237,13 +245,14 @@ SIGNAL(TIMER0_COMPA_vect) {
 void setup() 
 {
   Serial.begin(9600); //begins usb serial connection
-  Serial.println('1');
+  //for(int i = 0;i<=53;i++){
+  //  pinMode(i,OUTPUT);
+  //  digitalWrite(i,LOW);
+  //}
 }
 
 void loop(){
-  Serial.println('9');
   readData();
-  
   
 }
 
@@ -255,7 +264,7 @@ void readData()
     if (go.equals("waterSubzone")) //waters subzone; format: waterSubzone;1;10 <- waters subzone 1 for 10 milliliters
     {
       int subzoneToWater = Serial.parseInt(); //sets subzone to water
-      int volumeToWater =  Serial.parseInt(); //sets how much total water is needed; INDIVIDUAL WATER MUST BE SET IN PYTHON
+      int volumeToWater =  Serial.parseFloat(); //sets how much total water is needed; INDIVIDUAL WATER MUST BE SET IN PYTHON
       Serial.println("Subzone Watered"); //confirms subzones watered
       flow.setNeededVolume(volumeToWater); //sets the volume;
       waterSubzone(subzoneToWater); //watering
@@ -294,7 +303,7 @@ void waterSubzone(int subzoneToWater){
       pump.on();
       //reads the volume from the flow meter
       //flow.readingVolume(flow.getVolume()); FIX
-      delay(3000);
+      delay(20000);
       pump.off();
 
       /*
@@ -321,7 +330,7 @@ void waterSubzone(int subzoneToWater){
       pump.on();
       //reads the volume from the flow meter
       //flow.readingVolume(flow.getVolume()); FIX
-      delay(3000);
+      delay(20000);
       pump.off();
 
       /*
@@ -348,7 +357,7 @@ void waterSubzone(int subzoneToWater){
       pump.on();
       //reads the volume from the flow meter
       //flow.readingVolume(flow.getVolume()); FIX
-      delay(3000);
+      delay(20000);
       pump.off();
 
       /*
@@ -374,8 +383,8 @@ void waterSubzone(int subzoneToWater){
       emitterValveD.on();
       pump.on();
       //reads the volume from the flow meter
-      //flow.readingVolume(flow.getVolume()); FIX
-      delay(3000);
+      flow.readingVolume(); 
+      //delay(20000);
       pump.off();
 
       /*
