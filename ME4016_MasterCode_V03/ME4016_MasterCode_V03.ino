@@ -175,7 +175,8 @@ class FlowSensor {
   void readingVolume(){
     //reads the volume
     useInterrupt(true); //allows interrupt
-    long endTime =millis()+30000;
+    long startTime = millis();
+    long endTime =millis()+40000;
     while(getNeededVolume() >= getReadVolume() && millis()<= endTime){
       Serial.print("Freq: "); Serial.println(getFlowRate());
       Serial.print("Pulses: "); Serial.println(getPulses(), DEC);
@@ -190,9 +191,13 @@ class FlowSensor {
       liters /= 60.0;
       setReadVolume(liters);
       Serial.print(liters); Serial.println(" Liters");
-      delay(100); //CONSIDER REPLACING WITH MILLIS() APPROACH
+      Serial.println(millis()-startTime);
+      delay(50); //CONSIDER REPLACING WITH MILLIS() APPROACH
+      
     }
     useInterrupt(false); //UN-allows interrupt
+    setPulses(0);
+    setReadVolume(0);
   }
 };
 
@@ -207,7 +212,7 @@ static int caliCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 
 /*all the valves, flow sensors, pumps, and load cells initialize*/
-Valve pump(21,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
+Valve subzonePump(21,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
 Valve tankValveA(22,0,'t'); //Tank A1 valve; Water Tank
 Valve tankValveB(23,1,'t'); //Tank A2 valve;
 Valve tankValveC(24,2,'t'); //Tank A3 valve;
@@ -222,6 +227,7 @@ FlowSensor flow(15);// sets up the flow sensor
 
 
 //LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
+
 /* PIN INTERRUPT FOR FLOW SENSOR*/
 SIGNAL(TIMER0_COMPA_vect) {
   uint8_t x = digitalRead(flow.getPin());
@@ -260,21 +266,21 @@ void loop(){
 void readData() 
 {
    if (Serial.available() > 0){ //Checks if there is serial available 
-    String go = Serial.readStringUntil(';'); //Reads until ';'
-    if (go.equals("waterSubzone")) //waters subzone; format: waterSubzone;1;10 <- waters subzone 1 for 10 milliliters
+    char go = Serial.read(); //Reads command
+    if (go == 'w') //waters subzone; format: waterSubzone;1;10 <- waters subzone 1 for 10 milliliters
     {
       int subzoneToWater = Serial.parseInt(); //sets subzone to water
-      int volumeToWater =  Serial.parseFloat(); //sets how much total water is needed; INDIVIDUAL WATER MUST BE SET IN PYTHON
+      float volumeToWater =  Serial.parseFloat(); //sets how much total water is needed; INDIVIDUAL WATER MUST BE SET IN PYTHON
       Serial.println("Subzone Watered"); //confirms subzones watered
       flow.setNeededVolume(volumeToWater); //sets the volume;
       waterSubzone(subzoneToWater); //watering
 
     }
-    else if (go.equals("zeroLoadCells")){ //zeros all of the load cells
+    else if (go == 'z'){ //zeros all of the load cells
       Serial.println("Load Cells Zeroed"); //confirms load cell zeroing
       //loadCells.zeroLoadCells();
     }
-    else if (go.equals("readLoadCells")){ //read loads and returns array of readings
+    else if (go == 'r'){ //read loads and returns array of readings
       //loadCells.readLoadCells();
       Serial.println("Load Cells Read"); //confirms load cells read
     }
@@ -300,22 +306,22 @@ void waterSubzone(int subzoneToWater){
       //turns on valve A2, emitter A, and pump
       tankValveA.on();
       emitterValveA.on();
-      pump.on();
+      subzonePump.on();
       //reads the volume from the flow meter
       //flow.readingVolume(flow.getVolume()); FIX
       delay(20000);
-      pump.off();
+      subzonePump.off();
 
       /*
       
       //Flushes the Subzone
       tankValveA.on();
       tankValveB.off();
-      pump.on();
+      subzonePump.on();
       //flow.readingVolume(500); //adjustable flush volume
       delay(5000);
       //SHUT OFF
-      pump.off();
+      subzonePump.off();
       tankValveA.off();
 
       */
@@ -327,22 +333,22 @@ void waterSubzone(int subzoneToWater){
       //turns on valve A2, emitter A, and pump
       tankValveB.on();
       emitterValveB.on();
-      pump.on();
+      subzonePump.on();
       //reads the volume from the flow meter
       //flow.readingVolume(flow.getVolume()); FIX
       delay(20000);
-      pump.off();
+      subzonePump.off();
 
       /*
       
       //Flushes the Subzone
       tankValveA.on();
       tankValveB.off();
-      pump.on();
+      subzonePump.on();
       //flow.readingVolume(500); //adjustable flush volume
       delay(5000);
       //SHUT OFF
-      pump.off();
+      subzonePump.off();
       tankValveA.off();
 
       */
@@ -354,22 +360,22 @@ void waterSubzone(int subzoneToWater){
       //turns on valve A2, emitter A, and pump
       tankValveC.on();
       emitterValveC.on();
-      pump.on();
+      subzonePump.on();
       //reads the volume from the flow meter
       //flow.readingVolume(flow.getVolume()); FIX
       delay(20000);
-      pump.off();
+      subzonePump.off();
 
       /*
       
       //Flushes the Subzone
       tankValveA.on();
       tankValveB.off();
-      pump.on();
+      subzonePump.on();
       //flow.readingVolume(500); //adjustable flush volume
       delay(5000);
       //SHUT OFF
-      pump.off();
+      subzonePump.off();
       tankValveA.off();
 
       */
@@ -381,11 +387,11 @@ void waterSubzone(int subzoneToWater){
       //turns on valve A2, emitter A, and pump
       tankValveD.on();
       emitterValveD.on();
-      pump.on();
+      subzonePump.on();
       //reads the volume from the flow meter
       flow.readingVolume(); 
       //delay(20000);
-      pump.off();
+      subzonePump.off();
 
       /*
       
@@ -396,7 +402,7 @@ void waterSubzone(int subzoneToWater){
       //flow.readingVolume(500); //adjustable flush volume
       delay(5000);
       //SHUT OFF
-      pump.off();
+      subzonePump.off();
       tankValveA.off();
 
       */
@@ -406,4 +412,12 @@ void waterSubzone(int subzoneToWater){
   }
 }
 
-  
+void flushSubzone(Valve tank, Valve emitter, Valve pump){
+  emitter.on();
+  tank.on();
+  pump.on();
+  flow.readingVolume();
+  pump.off();
+  tank.off();
+  emitter.off();
+}

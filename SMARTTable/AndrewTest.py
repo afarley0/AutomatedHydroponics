@@ -1,6 +1,6 @@
 import serial
 import time
-ser1 = serial.Serial('COM7', baudrate = 9600, timeout = 1) #opens serial for arduino 1
+ser1 = serial.Serial('COM8', baudrate = 9600, timeout = 1) #opens serial for arduino 1
 ser1.close()
 #ser2 = serial.Serial('COM8', baudrate = 9600, timeout = 1) #opens serial for arduino 2
 #ser2.close()
@@ -14,7 +14,7 @@ dataList = [0]*numPoints
 
 def waterSubzone(serPort,subzone,volume) #waters subzone
     time.sleep(1)
-    serPort.write(b'w;') #sends water confirmation
+    serPort.write(b'w') #sends water confirmation
     serPort.write(subzone) #sends subzone
     serPort.write(';')
     serPort.write(volume)
