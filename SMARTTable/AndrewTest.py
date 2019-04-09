@@ -1,6 +1,6 @@
 import serial
 import time
-ser1 = serial.Serial('COM8', baudrate = 9600, timeout = 1) #opens serial for arduino 1
+ser1 = serial.Serial('COM10', baudrate = 9600, timeout = 1) #opens serial for arduino 1
 ser1.close()
 #ser2 = serial.Serial('COM8', baudrate = 9600, timeout = 1) #opens serial for arduino 2
 #ser2.close()
@@ -12,25 +12,26 @@ numPoints = 1
 
 dataList = [0]*numPoints
 
-def waterSubzone(serPort,subzone,volume) #waters subzone
+
+
+def waterSubzone(serPort,subzone,volume):
     time.sleep(1)
-    serPort.write(b'w') #sends water confirmation
-    serPort.write(subzone) #sends subzone
-    serPort.write(';')
+    serPort.write(b'w')
+    serPort.write(subzone)
     serPort.write(volume)
     time.sleep(1)
-    confirm = serPort.readline().decode().split('\r\n')
+    confirm = serPort.readline()#.decode.split('\r\n')
     print(confirm)
-
-
-
+    print('confirm')
+    
 
 def getValues():
 
     ser1.write(b'g')
 
     arduinoData = ser1.readline().decode().split('\r\n')
-    return arduinoData[0]
+    print(arduinoData)
+    #return arduinoData[0]
 while(1):
     userInput = input('Action?')
     if userInput == 'w':
@@ -47,7 +48,3 @@ while(1):
 
            #print(dataList)
         ser1.close()
-    elif userInput == 'z'
-
-    else 
-        print('ERROR')
