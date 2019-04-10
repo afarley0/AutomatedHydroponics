@@ -217,6 +217,7 @@ class Thread_Timer(threading.Thread):
         self.sequence = sequence
         self.total_time = total_time
 
+
         #changes time to minutes
         self.total_time*=60
 
@@ -242,6 +243,20 @@ class Thread_Timer(threading.Thread):
 
             app.multi_seq_list_copy.append(self.sequence)
 
+class Load_Cell_Timer(threading.Thread):
+
+    def __init__(self,event):
+        threading.Thread.__init__(self)
+        self.stopped = event
+
+
+    def run(self):
+        while not self.stopped.wait(600):
+            print("thread test") #SEND LOAD CELL COMMAND
+
+stopFlag = threading.Event()
+thread = Load_Cell_Timer(stopFlag)
+thread.start()
 #TEST
 #class Testbox(tk.Frame):
 #    def __init__(self,master=None):
@@ -256,7 +271,6 @@ class Thread_Timer(threading.Thread):
 
 class Fluids_Water(tk.Frame):
     #def __init__(self):
-
 
     def subzone_Water(self,zone,subzone,tank,volume):
         if zone == 1:
@@ -543,7 +557,7 @@ class Application(tk.Frame):
 
         #creates frame for fluid system
         fluids_frame = tk.LabelFrame(self, text = "Fluids and Load Cells", padx = 5, pady = 5)
-        fluids_frame.grid(row=0, column = 3, rowspan = 4)
+        fluids_frame.grid(row = 0, column = 3, rowspan = 4)
         fluids_frame.grid_columnconfigure(2,minsize=100)
 
         #creates buttons within fluid frame
@@ -553,34 +567,34 @@ class Application(tk.Frame):
         self.z1e2_button = tk.Button(fluids_frame, text="Zone 1: Emitter 2", command=self.z1e2)
         self.z1e2_button.grid(column=0,row=1,padx=5,pady=5)
 
-        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=self.z1e3)
+        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=lambda: self.subzone(1,3,'COM1',self.comboz1e3.get(),self.entryz1e3.get()))
         self.z1e3_button.grid(column=0,row=2,padx=5,pady=5)
 
-        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=self.z1e4)
+        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=lambda: self.subzone(1,4,'COM1',self.comboz1e4.get(),self.entryz1e4.get()))
         self.z1e4_button.grid(column=0,row=3,padx=5,pady=5)
 
-        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=self.z2e1)
+        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=lambda: self.subzone(2,1,'COM2',self.comboz2e1.get(),self.entryz2e1.get()))
         self.z2e1_button.grid(column=0,row=4,padx=5,pady=5)
 
-        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=self.z2e2)
+        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=lambda: self.subzone(2,2,'COM2',self.comboz2e2.get(),self.entryz2e2.get()))
         self.z2e2_button.grid(column=0,row=5,padx=5,pady=5)
 
-        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=self.z2e3)
+        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=lambda: self.subzone(2,3,'COM2',self.comboz2e3.get(),self.entryz2e3.get()))
         self.z2e3_button.grid(column=0,row=6,padx=5,pady=5)
 
-        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=self.z2e4)
+        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=lambda: self.subzone(2,4,'COM2',self.comboz2e4.get(),self.entryz2e4.get()))
         self.z2e4_button.grid(column=0,row=7,padx=5,pady=5)
 
-        self.z3e1_button = tk.Button(fluids_frame, text="Zone 3: Emitter 1", command=self.z3e1)
+        self.z3e1_button = tk.Button(fluids_frame, text="Zone 3: Emitter 1", command=lambda: self.subzone(3,1,'COM3',self.comboz3e1.get(),self.entryz3e1.get()))
         self.z3e1_button.grid(column=0,row=8,padx=5,pady=5)
 
-        self.z3e2_button = tk.Button(fluids_frame, text="Zone 3: Emitter 2", command=self.z3e2)
+        self.z3e2_button = tk.Button(fluids_frame, text="Zone 3: Emitter 2", command=lambda: self.subzone(3,2,'COM3',self.comboz3e2.get(),self.entryz3e2.get()))
         self.z3e2_button.grid(column=0,row=9,padx=5,pady=5)
 
-        self.z3e3_button = tk.Button(fluids_frame, text="Zone 3: Emitter 3", command=self.z3e3)
+        self.z3e3_button = tk.Button(fluids_frame, text="Zone 3: Emitter 3", command=lambda: self.subzone(3,3,'COM3',self.comboz3e3.get(),self.entryz3e3.get()))
         self.z3e3_button.grid(column=0,row=10,padx=5,pady=5)
 
-        self.z3e4_button = tk.Button(fluids_frame, text="Zone 3: Emitter 4", command=self.z3e4)
+        self.z3e4_button = tk.Button(fluids_frame, text="Zone 3: Emitter 4", command=lambda: self.subzone(3,4,'COM3',self.comboz3e4.get(),self.entryz3e4.get()))
         self.z3e4_button.grid(column=0,row=11,padx=5,pady=5)
 
         self.zero_button = tk.Button(fluids_frame, text="Zero Load Cells", command=self.zero)
@@ -786,6 +800,18 @@ class Application(tk.Frame):
         #CALL ZERO LOAD CELL FUNCTION
         #msgBox = tkMessageBox.askyesno('Confirmation Window','Are you sure?')
         if tkMessageBox.askyesno('Confirmation Window','Are you sure?'):
+            ser1 = serial.Serial(port='COM3', baudrate=9600, timeout=1)
+            time.sleep(1)
+            ser1.write(b'Zero')
+            ser1.close()
+            ser2 = serial.Serial(port='COM4', baudrate=9600, timeout=1)
+            time.sleep(1)
+            ser2.write(b'Zero')
+            ser2.close()
+            ser3 = serial.Serial(port='COM5', baudrate=9600, timeout=1)
+            time.sleep(1)
+            ser3.write(b'Zero')
+            ser3.close()
             print("Zero")
             #SERIAL PRINT ZERO COMMAND
 
@@ -797,6 +823,37 @@ class Application(tk.Frame):
 
         return data[0]
 
+    #MIGHT REPLACE ALL BUTTON DEFINITIONS
+    #PUT self.subzone(zone,sub,ser,tank,volume) in button command, might need lambda
+    def subzone(self,zone,sub,ser,tank,volume):
+        if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            z = zone
+            s = sub
+            t = tank
+            v = volume
+            sertest = serial.Serial(port=ser, baudrate=9600, timeout=1)
+            time.sleep(1)
+            f = Fluids_Water()
+            Fluids_Water.subzone_Water(f,z,s,t,v)
+            numpoints = 1 #CHANGE TO AMOUNT OF INPUTS
+            for i in range(0,numpoints):
+                datalist = [0]*numpoints
+                data = self.getValues(sertest) #MIGHT NOT NEED ANY INPUTS
+                print(type(data))
+                data = int(float(data))
+                datalist[i] = data
+                dataAvg = sum(datalist)/numpoints
+            print(datalist)
+            time.sleep(1)
+            sertest.close()
+
+            #ser1.open()
+            #OPEN SERIAL PORT AND SEND COMMAND TO WATER
+            #ASSIGN TANK DESIGNATION AND VOLUME TO VARIABLES
+            #GET VOLUME AND TANK FROM BOXES
+        else:
+            print("Canceled")
+
     def z1e1(self):
         if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
             z1e1_volume = self.entryz1e1.get()
@@ -805,7 +862,7 @@ class Application(tk.Frame):
             #ser1.close()
             sertest = serial.Serial(port='COM3', baudrate=9600, timeout=1)
             time.sleep(1)
-            numpoints = 1
+            numpoints = 1 #CHANGE TO AMOUNT OF INPUTS
             for i in range(0,numpoints):
                 datalist = [0]*numpoints
                 data = self.getValues(sertest)
