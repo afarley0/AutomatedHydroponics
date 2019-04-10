@@ -243,6 +243,7 @@ class Thread_Timer(threading.Thread):
 
             app.multi_seq_list_copy.append(self.sequence)
 
+#timer for load cell readings, might be able to combine with timer above
 class Load_Cell_Timer(threading.Thread):
 
     def __init__(self,event):
@@ -257,6 +258,10 @@ class Load_Cell_Timer(threading.Thread):
 stopFlag = threading.Event()
 thread = Load_Cell_Timer(stopFlag)
 thread.start()
+#stopFlag.set() USE THIS TO STOP TIMER
+#stopFlag.clear() USE THIS TO CONTINUE TIMER
+#TIMER CURRENTLY DOES NOT STOP
+
 #TEST
 #class Testbox(tk.Frame):
 #    def __init__(self,master=None):
