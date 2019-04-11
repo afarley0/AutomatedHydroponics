@@ -95,6 +95,7 @@ class LoadCells{
 };
 
 /*The FlowSensor class takes care of measuring the flow from the pump to the emitters*/
+/*
 class FlowSensor {
   int pinInput; //pin will be read
   float totalNeededVolume; //total volume is needed
@@ -200,7 +201,55 @@ class FlowSensor {
     setReadVolume(0);
   }
 };
+ */
 
+
+#define FLOWSENSORPIN 15
+
+// count how many pulses!
+volatile uint16_t pulses = 0;
+// track the state of the pulse pin
+volatile uint8_t lastflowpinstate;
+// you can try to keep time of how long it is between pulses
+volatile uint32_t lastflowratetimer = 0;
+// and use that to calculate a flow rate
+volatile float flowrate;
+// the volume to total volume to water in liters
+volatile float volumeToWater;
+// Interrupt is called once a millisecond, looks for any pulses from the sensor!
+SIGNAL(TIMER0_COMPA_vect) {
+  uint8_t x = digitalRead(FLOWSENSORPIN);
+  
+  if (x == lastflowpinstate) {
+    lastflowratetimer++;
+    return; // nothing changed!
+  }
+  
+  if (x == HIGH) {
+    //low to high transition!
+    pulses++;
+  }
+  lastflowpinstate = x;
+  if(lastflowratetimer == 0){
+    flowrate = 0;
+    return;
+  }
+  flowrate = 1000.0;
+  flowrate /= lastflowratetimer;  // in hertz 
+  lastflowratetimer = 0;
+}
+
+void useInterrupt(boolean v) {
+  if (v) {
+    // Timer0 is already used for millis() - we'll just interrupt somewhere
+    // in the middle and call the "Compare A" function above
+    OCR0A = 0xAF;
+    TIMSK0 |= _BV(OCIE0A);
+  } else {
+    // do not call the interrupt function COMPA anymore
+    TIMSK0 &= ~_BV(OCIE0A);
+  }
+}
 
 
 //read pins, offset, calibration factors, and clock pin for all the load cells
@@ -223,12 +272,14 @@ Valve emitterValveB(18,2,'e'); //Emitter B; Subzone 2
 Valve emitterValveC(19,3,'e'); //Emitter C; Subzone 3
 Valve emitterValveD(20,4,'e'); //Emitter D; Subzone 4
 
-FlowSensor flow(15);// sets up the flow sensor
+//FlowSensor flow(15);// sets up the flow sensor
 
 
 //LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
 
+
 /* PIN INTERRUPT FOR FLOW SENSOR*/
+/*
 SIGNAL(TIMER0_COMPA_vect) {
   uint8_t x = digitalRead(flow.getPin());
   
@@ -246,15 +297,14 @@ SIGNAL(TIMER0_COMPA_vect) {
   flow.setFlowRate(flow.getFlowRate() / flow.getLastFlowRateTimer());  // in hertz
   flow.setLastFlowRateTimer(0);
 }
-
+*/
 
 void setup() 
 {
   Serial.begin(9600); //begins usb serial connection
-  //for(int i = 0;i<=53;i++){
-  //  pinMode(i,OUTPUT);
-  //  digitalWrite(i,LOW);
-  //}
+  pinMode(FLOWSENSORPIN, INPUT);
+  digitalWrite(FLOWSENSORPIN, HIGH);
+  lastflowpinstate = digitalRead(FLOWSENSORPIN);
 }
 
 void loop(){
@@ -270,9 +320,9 @@ void readData()
     if (go == 'w') //waters subzone; format: waterSubzone;1;10 <- waters subzone 1 for 10 milliliters
     {
       int subzoneToWater = Serial.parseInt(); //sets subzone to water
-      float volumeToWater =  Serial.parseFloat(); //sets how much total water is needed; INDIVIDUAL WATER MUST BE SET IN PYTHON
+      volumeToWater =  Serial.parseFloat(); //sets how much total water is needed; INDIVIDUAL WATER MUST BE SET IN PYTHON
       Serial.println("Subzone Watered"); //confirms subzones watered
-      flow.setNeededVolume(volumeToWater); //sets the volume;
+      //flow.setNeededVolume(volumeToWater); //sets the volume;
       waterSubzone(subzoneToWater); //watering
 
     }
@@ -389,7 +439,10 @@ void waterSubzone(int subzoneToWater){
       emitterValveD.on();
       subzonePump.on();
       //reads the volume from the flow meter
-      flow.readingVolume(); 
+      useInterrupt(true);
+      readingVolume(volumeToWater);
+      useInterrupt(false);
+      //flow.readingVolume(); 
       //delay(20000);
       subzonePump.off();
 
@@ -412,11 +465,37 @@ void waterSubzone(int subzoneToWater){
   }
 }
 
+void readingVolume(float inputVolume){
+  long startTime = millis();
+  float liters = 0;
+  pulses = 0;
+  while(inputVolume > liters && millis()<startTime+30000){
+
+    Serial.print("Freq: "); Serial.println(flowrate);
+    Serial.print("Pulses: "); Serial.println(pulses, DEC);
+  
+    liters = pulses;
+    liters /= 7.5;
+    liters /= 60.0;
+  
+    Serial.print(liters); Serial.println(" Liters");
+    Serial.print(millis()-startTime); Serial.println(" Run Time");
+    delay(100);
+  }
+  liters = 0;
+  pulses = 0;
+  lastflowpinstate = LOW;
+  flowrate = 0;
+  lastflowratetimer = 0;
+  startTime = 0;
+  
+}
+
 void flushSubzone(Valve tank, Valve emitter, Valve pump){
   emitter.on();
   tank.on();
   pump.on();
-  flow.readingVolume();
+  //flow.readingVolume();
   pump.off();
   tank.off();
   emitter.off();
