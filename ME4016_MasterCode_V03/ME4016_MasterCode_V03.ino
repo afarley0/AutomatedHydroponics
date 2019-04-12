@@ -6,6 +6,7 @@
 #include <EEPROM.h>
 #include <config.h>
 #include <HX711_ADC.h>
+#include <SparkFun_RHT03.h>
 
 /* The Valve class encorporates all of the valves on the manifold, can also work for pump*/
 class Valve{
@@ -83,12 +84,9 @@ class LoadCells{
       }
     }
     void readLoadCells(){ // Reads each individual load cell and prints
-      Serial.println("1");
-      int voltageReading[loadCellAmount];
+      //int voltageReading[loadCellAmount];
       for(int i = 0; i < loadCellAmount;i++){
-        //loadCellReading[i] = scale[i].read_average(5);//scale[i].get_units();
-        //voltageReading[i] = digitalRead(loadCellPins[i]); //DELETE?
-        //loadCellReading[i] = voltageReading[i]*loadCellCali[i]+loadCellOffset[i]; //DELETE?
+        loadCellReading[i] = scale[i].get_units(10); //gets the average for 10 readings
         Serial.println(loadCellReading[i],3);
       }
     }
@@ -162,7 +160,10 @@ Valve emitterValveB(18,2,'e'); //Emitter B; Subzone 2
 Valve emitterValveC(19,3,'e'); //Emitter C; Subzone 3
 Valve emitterValveD(20,4,'e'); //Emitter D; Subzone 4
 
-//LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
+const int RHT03_DATA_PIN = 4; // RHT03 data pin
+RHT03 rht; // This creates a RTH03 object, which we'll use to interact with the sensor
+
+LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
 
 void setup() 
 {
@@ -170,6 +171,7 @@ void setup()
   pinMode(FLOWSENSORPIN, INPUT);
   digitalWrite(FLOWSENSORPIN, HIGH);
   lastflowpinstate = digitalRead(FLOWSENSORPIN);
+  rht.begin(RHT03_DATA_PIN);
 }
 
 void loop(){
@@ -206,10 +208,10 @@ void readData()
     }
     else if (go == 'z'){ //zeros all of the load cells
       Serial.println("Load Cells Zeroed"); //confirms load cell zeroing
-      //loadCells.zeroLoadCells();
+      loadCells.zeroLoadCells();
     }
     else if (go == 'r'){ //read loads and returns array of readings
-      //loadCells.readLoadCells();
+      loadCells.readLoadCells();
       Serial.println("Load Cells Read"); //confirms load cells read
     }
     else if (go == 't'){ //read loads and returns array of readings
@@ -255,10 +257,33 @@ void waterSubzone(Valve tank, Valve emitter, Valve pump){
   tank.off();
   emitter.off();
 }
-int readHumid(){
-  return 0; //humidity placeholder
+/*Reads the relative humidity*/
+float readHumid(){
+  // If successful, the update() function will return 1.
+  // If update fails, it will return a value <0
+  long startTime = millis()+5000;
+  while(rht.update()< 1)
+  {
+    if(millis()>startTime){
+      return NULL;
+    }
+    delay(RHT_READ_INTERVAL_MS);
+  }
+  float latestHumidity = rht.humidity();
+  return latestHumidity;
 }
-/*returns the temperature in _UNITS_*/
-int readTemp(){
-  return 0; //temp placeholder
+/*Reads the temperature in C*/
+float readTemp(){
+  // If successful, the update() function will return 1.
+  // If update fails, it will return a value <0
+  long startTime = millis()+5000;
+  while(rht.update()< 1)
+  {
+    if(millis()>startTime){
+      return NULL;
+    }
+    delay(RHT_READ_INTERVAL_MS);
+  }
+  float latestTempC = rht.tempC();
+  return latestTempC;
 }
