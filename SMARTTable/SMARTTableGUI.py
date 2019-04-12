@@ -250,46 +250,134 @@ class Load_Cell_Timer(threading.Thread):
         threading.Thread.__init__(self)
         self.stopped = event
 
-
     def run(self):
-        while not self.stopped.wait(600):
-            print("thread test") #SEND LOAD CELL COMMAND
+        while not self.stopped.wait(5):
+            print("load test") #SEND LOAD CELL COMMAND
+            self.load_cell_read()
 
-stopFlag = threading.Event()
-thread = Load_Cell_Timer(stopFlag)
-thread.start()
+    def load_cell_read(self):
+        ser1 = serial.Serial('COM8',baudrate=9600,timeout=1)
+        time.sleep(1)
+        ser1.write(b't')
+        reading = ''
+        reading_array = [0]*34
+        index = 0
+        while reading != ';':
+            data = ser1.read()
+            reading = str(data)
+            reading_array[index] = data
+            index = index + 1
+        ser1.write(b'r')
+        reading = ''
+        while reading != ';':
+            data = ser1.read()
+            reading = str(data)
+            reading_array[index] = data
+            index = index + 1
+        print(reading_array)
+        time.sleep(1)
+        ser1.close()
+        ser2 = serial.Serial('COM9',baudrate=9600,timeout=1)
+        time.sleep(1)
+        ser2.write(b'r')
+        reading = ''
+        while reading != ';':
+            data = ser2.read()
+            reading = str(data)
+            reading_array[index] = data
+            index = index + 1
+        print(reading_array)
+        time.sleep(1)
+        ser2.close()
+        ser3 = serial.Serial('COM10',baudrate=9600,timeout=1)
+        time.sleep(1)
+        ser3.write(b'r')
+        reading = ''
+        while reading != ';':
+            data = ser3.read()
+            reading = str(data)
+            reading_array[index] = data
+            index = index + 1
+        print(reading_array)
+        time.sleep(1)
+        ser3.close()
+        self.output_excel(reading_array)
+
+    def output_excel(self,array):
+        with open('test.csv', mode='a') as test_file:
+            test_writer = csv.writer(test_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            #NEEDS CONSTRUCTION OF LABELS
+            time = datetime.datetime.now().strftime("%y-%d-%m,%H:%M")
+            data = array
+            #WILL NEED TO ADJUST FOR MORE LOAD CELLS
+            data = [time,data[0],data[1],data[2],data[3],data[4],data[5],data[6],data[7],data[8],data[9]]
+            test_writer.writerow(data)
+
+stopLoad = threading.Event()
+thread_load = Load_Cell_Timer(stopLoad)
+thread_load.start()
 #stopFlag.set() USE THIS TO STOP TIMER
 #stopFlag.clear() USE THIS TO CONTINUE TIMER
 #TIMER CURRENTLY DOES NOT STOP
 
-#TEST
-#class Testbox(tk.Frame):
-#    def __init__(self,master=None):
-#        self.createWidgets2()
-#        self.pack()
+class Fluids_Timer(threading.Thread):
 
-#    def createWidgets2(self):
-#        auto_state = tk.IntVar()
-#        #place check button in fluid frame
-#        self.auto_check = tk.Checkbutton(fluids_frame, text="Automatic Watering", variable=auto_state)
-#        self.auto_check.grid(column=3,row=2,sticky='e')
+    def __init__(self,event):
+        threading.Thread.__init__(self)
+        self.stopped = event
+#SEND TIMECOMBO WHEN SENDALL IS PRESSED?
+    def run(self):
+        while not self.stopped.wait(5):
+            print("fluid test") #SEND FLUID COMMAND
+            self.systemTime = datetime.datetime.now().strftime("%H:%M")
+            self.timeSetting = Application().timecombo
+            print(systemTime)
+            print(timeSetting)
+            if systemTime == timeSetting:
+                print('fluid test')
 
+stopFluid = threading.Event()
+thread_fluid = Fluids_Timer(stopFluid)
+thread_fluid.start()
+
+
+#MIGHT NOT NEED THIS
+'''
 class Fluids_Water(tk.Frame):
     #def __init__(self):
 
     def subzone_Water(self,zone,subzone,tank,volume):
         if zone == 1:
             #OPEN SERIAL 1 AND SEND INFO
-            print(subzone)
-            print(tank)
-            print(volume)
+            sertest = serial.Serial(port='COM10', baudrate=9600, timeout=1)
+            time.sleep(1)
+            sertest.write(b'w')
+            sertest.write(subzone)
+            sertest.write(volume)
+            data = sertest.readline().decode().split('\r\n')
+            numpoints = 1 #CHANGE TO AMOUNT OF INPUTS
+            for i in range(0,numpoints):
+                datalist = [0]*numpoints
+                data = self.getValues(sertest)
+                print(type(data))
+                #data = int(float(data))
+                datalist[i] = data
+                dataAvg = sum(datalist)/numpoints
+            #ser1.write(b'g') #INFO FOR VOLUME AND TANK, SEND PROPER COMMAND
+            #output = ser1.readline().decode().split('\r\n')
+            #output = self.getValues()
+            #output = int(output[0])
+            print(datalist)
+            time.sleep(1)
+            sertest.close()
+
         elif zone == 2:
             #OPEN SERIAL 2 AND SEND INFO
             print(2)
         elif zone == 3:
             #OPEN SERIAL 3 AND SEND INFO
             print(3)
-
+'''
 
 #main class
 class Application(tk.Frame):
@@ -560,46 +648,65 @@ class Application(tk.Frame):
         self.run_sequence_button.grid(row = 5, column = 0)
         self.repeat_checkbutton.grid(row = 6, column = 0)
 
+        '''
+        #label creation to be used in displaying time for sequences
+        #need to fix/finish integration
+        self.time_display_frame = LabelFrame(self, text = "Time Display", padx = 5, pady = 5)
+        self.time_display_frame.grid(row = 0, column = 2, rowspan = 2)
+
+        self.sequence1_label = Label(self.time_display_frame, text = "Sequence 1").grid(row = 0, column = 0)
+        self.sequence2_label = Label(self.time_display_frame, text = "Sequence 2").grid(row = 1, column = 0)
+        self.sequence3_label = Label(self.time_display_frame, text = "Sequence 3").grid(row = 2, column = 0)
+        self.sequence4_label = Label(self.time_display_frame, text = "Sequence 4").grid(row = 3, column = 0)
+        self.sequence5_label = Label(self.time_display_frame, text = "Sequence 5").grid(row = 4, column = 0)
+
+        self.sequence1_time_label = Label(self.time_display_frame, text = "Sequence 1").grid(row = 0, column = 1)
+        self.sequence2_time_label = Label(self.time_display_frame, text = "Sequence 2").grid(row = 1, column = 1)
+        self.sequence3_time_label = Label(self.time_display_frame, text = "Sequence 3").grid(row = 2, column = 1)
+        self.sequence4_time_label = Label(self.time_display_frame, text = "Sequence 4").grid(row = 3, column = 1)
+        self.sequence5_time_label = Label(self.time_display_frame, text = "Sequence 5").grid(row = 4, column = 1)
+        '''
+
         #creates frame for fluid system
         fluids_frame = tk.LabelFrame(self, text = "Fluids and Load Cells", padx = 5, pady = 5)
         fluids_frame.grid(row = 0, column = 3, rowspan = 4)
         fluids_frame.grid_columnconfigure(2,minsize=100)
 
         #creates buttons within fluid frame
-        self.z1e1_button = tk.Button(fluids_frame, text="Zone 1: Emitter 1", command=self.z1e1)
+        self.z1e1_button = tk.Button(fluids_frame, text="Zone 1: Emitter 1", command=lambda: self.subzone(1,'COM8',self.comboz1e1.get(),self.entryz1e1.get()))
         self.z1e1_button.grid(column=0,row=0,padx=5,pady=5)
 
-        self.z1e2_button = tk.Button(fluids_frame, text="Zone 1: Emitter 2", command=self.z1e2)
+        self.z1e2_button = tk.Button(fluids_frame, text="Zone 1: Emitter 2", command=lambda: self.subzone(2,'COM8',self.comboz1e2.get(),self.entryz1e2.get()))
         self.z1e2_button.grid(column=0,row=1,padx=5,pady=5)
 
-        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=lambda: self.subzone(1,3,'COM1',self.comboz1e3.get(),self.entryz1e3.get()))
+        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=lambda: self.subzone(3,'COM8',self.comboz1e3.get(),self.entryz1e3.get()))
         self.z1e3_button.grid(column=0,row=2,padx=5,pady=5)
 
-        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=lambda: self.subzone(1,4,'COM1',self.comboz1e4.get(),self.entryz1e4.get()))
+        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=lambda: self.subzone(4,'COM8',self.comboz1e4.get(),self.entryz1e4.get()))
         self.z1e4_button.grid(column=0,row=3,padx=5,pady=5)
 
-        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=lambda: self.subzone(2,1,'COM2',self.comboz2e1.get(),self.entryz2e1.get()))
+        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=lambda: self.subzone(1,'COM9',self.comboz2e1.get(),self.entryz2e1.get()))
         self.z2e1_button.grid(column=0,row=4,padx=5,pady=5)
 
-        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=lambda: self.subzone(2,2,'COM2',self.comboz2e2.get(),self.entryz2e2.get()))
+        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=lambda: self.subzone(2,'COM9',self.comboz2e2.get(),self.entryz2e2.get()))
         self.z2e2_button.grid(column=0,row=5,padx=5,pady=5)
 
-        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=lambda: self.subzone(2,3,'COM2',self.comboz2e3.get(),self.entryz2e3.get()))
+        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=lambda: self.subzone(3,'COM9',self.comboz2e3.get(),self.entryz2e3.get()))
         self.z2e3_button.grid(column=0,row=6,padx=5,pady=5)
 
-        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=lambda: self.subzone(2,4,'COM2',self.comboz2e4.get(),self.entryz2e4.get()))
+        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=lambda: self.subzone(4,'COM9',self.comboz2e4.get(),self.entryz2e4.get()))
         self.z2e4_button.grid(column=0,row=7,padx=5,pady=5)
 
-        self.z3e1_button = tk.Button(fluids_frame, text="Zone 3: Emitter 1", command=lambda: self.subzone(3,1,'COM3',self.comboz3e1.get(),self.entryz3e1.get()))
+        self.z3e1_button = tk.Button(fluids_frame, text="Zone 3: Emitter 1", command=lambda: self.subzone(1,'COM10',self.comboz3e1.get(),self.entryz3e1.get()))
         self.z3e1_button.grid(column=0,row=8,padx=5,pady=5)
 
-        self.z3e2_button = tk.Button(fluids_frame, text="Zone 3: Emitter 2", command=lambda: self.subzone(3,2,'COM3',self.comboz3e2.get(),self.entryz3e2.get()))
+        self.z3e2_button = tk.Button(fluids_frame, text="Zone 3: Emitter 2", command=lambda: self.subzone(2,'COM10',self.comboz3e2.get(),self.entryz3e2.get()))
         self.z3e2_button.grid(column=0,row=9,padx=5,pady=5)
 
-        self.z3e3_button = tk.Button(fluids_frame, text="Zone 3: Emitter 3", command=lambda: self.subzone(3,3,'COM3',self.comboz3e3.get(),self.entryz3e3.get()))
+        self.z3e3_button = tk.Button(fluids_frame, text="Zone 3: Emitter 3", command=lambda: self.subzone(3,'COM10',self.comboz3e3.get(),self.entryz3e3.get()))
         self.z3e3_button.grid(column=0,row=10,padx=5,pady=5)
 
-        self.z3e4_button = tk.Button(fluids_frame, text="Zone 3: Emitter 4", command=lambda: self.subzone(3,4,'COM3',self.comboz3e4.get(),self.entryz3e4.get()))
+        self.z3e4_button = tk.Button(fluids_frame, text="Zone 3: Emitter 4", command=lambda: self.subzone(4,'COM10',self.comboz3e4.get(),self.entryz3e4.get()))
         self.z3e4_button.grid(column=0,row=11,padx=5,pady=5)
 
         self.zero_button = tk.Button(fluids_frame, text="Zero Load Cells", command=self.zero)
@@ -730,14 +837,14 @@ class Application(tk.Frame):
         self.entryz3e4 = tk.Entry(fluids_frame, width=10)
         self.entryz3e4.grid(column=2,row=11,sticky='w')
 
-        #get time combo box value for send function
-        timecombo = self.time_combo.get()
-
         #sending fluid info button
         self.info_send = tk.Button(fluids_frame, text="Submit Fluid Information", command=lambda: self.sendall(auto_state.get(),self.time_combo.get()), width=20)
         self.info_send.grid(column=0,row=12,pady=10,sticky="e",rowspan=2)
 
-    def sendall(self, auto_state, time_combo):
+        #get time combo box value for send function
+        self.timecombo = self.time_combo.get()
+
+    def sendall(self, auto_state, timecombo):
 
     #NEEDS TO SEND ALL VOLUMES AND TANK DESIGNATION TO VARIABLES, CHECK AND START AUTOMATIC WATERING
     #VOLUME FROM ENTRY BOXES, TANKS FROM COMBO BOXES, TIME FROM COMBO BOX
@@ -748,7 +855,7 @@ class Application(tk.Frame):
     #LOOP SOMEWHERE?
     #systemTime = time.strftime("%Y %m %d %H %M", time.localtime())
         systemTime = datetime.datetime.now().strftime("%H:%M")
-        timeVariable = time_combo
+        timeVariable = timecombo
         print(timeVariable)
 
     #NEED TO MAKE LOOP
@@ -807,15 +914,17 @@ class Application(tk.Frame):
         if tkMessageBox.askyesno('Confirmation Window','Are you sure?'):
             ser1 = serial.Serial(port='COM3', baudrate=9600, timeout=1)
             time.sleep(1)
-            ser1.write(b'Zero')
+            ser1.write(b'z')
             ser1.close()
+            time.sleep(1)
             ser2 = serial.Serial(port='COM4', baudrate=9600, timeout=1)
             time.sleep(1)
-            ser2.write(b'Zero')
+            ser2.write(b'z')
             ser2.close()
+            time.sleep(1)
             ser3 = serial.Serial(port='COM5', baudrate=9600, timeout=1)
             time.sleep(1)
-            ser3.write(b'Zero')
+            ser3.write(b'z')
             ser3.close()
             print("Zero")
             #SERIAL PRINT ZERO COMMAND
@@ -830,25 +939,28 @@ class Application(tk.Frame):
 
     #MIGHT REPLACE ALL BUTTON DEFINITIONS
     #PUT self.subzone(zone,sub,ser,tank,volume) in button command, might need lambda
-    def subzone(self,zone,sub,ser,tank,volume):
+    def subzone(self,sub,ser,tank,volume):
         if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
-            z = zone
             s = sub
             t = tank
             v = volume
-            sertest = serial.Serial(port=ser, baudrate=9600, timeout=1)
+
+            sending = 'w ' + str(s) + ' ' + str(v)
+            print(sending)
+            sertest = serial.Serial(port=ser, baudrate=9600, timeout=None)
             time.sleep(1)
-            f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,z,s,t,v)
-            numpoints = 1 #CHANGE TO AMOUNT OF INPUTS
-            for i in range(0,numpoints):
-                datalist = [0]*numpoints
-                data = self.getValues(sertest) #MIGHT NOT NEED ANY INPUTS
-                print(type(data))
-                data = int(float(data))
-                datalist[i] = data
-                dataAvg = sum(datalist)/numpoints
-            print(datalist)
+            #sertest.write(b'w')
+            sertest.write(sending)
+            #sertest.write(s)
+            #sertest.write(v)
+            #f = Fluids_Water()
+            #Fluids_Water.subzone_Water(f,z,s,t,v)
+
+            data = sertest.read(1)#_until(';')
+
+                #data = sertest.readline().decode()#.split('\r\n')
+            print(data)
+
             time.sleep(1)
             sertest.close()
 
@@ -859,6 +971,8 @@ class Application(tk.Frame):
         else:
             print("Canceled")
 
+    #MIGHT DELETE ALL OF THIS
+    '''
     def z1e1(self):
         if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
             z1e1_volume = self.entryz1e1.get()
@@ -871,7 +985,7 @@ class Application(tk.Frame):
             for i in range(0,numpoints):
                 datalist = [0]*numpoints
                 data = self.getValues(sertest)
-                print(type(data))
+                #print(type(data))
                 data = int(float(data))
                 datalist[i] = data
                 dataAvg = sum(datalist)/numpoints
@@ -910,12 +1024,12 @@ class Application(tk.Frame):
             print(datalist)
             time.sleep(2)
             sertest.close()
-            '''
+
             z1e2_volume = self.entryz1e2.get()
             z1e2_tank = self.comboz1e2.get()
             f = Fluids_Water()
             Fluids_Water.subzone_Water(f,1,2,z1e2_tank,z1e2_volume)
-            '''
+
         print("Watering Zone 1: Emitter 2")
 
     def z1e3(self):
@@ -923,7 +1037,7 @@ class Application(tk.Frame):
             z1e3_volume = self.entryz1e3.get()
             z1e3_tank = self.comboz1e3.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z1e3_tank,z1e3_volume)
+            Fluids_Water.subzone_Water(f,1,3,z1e3_tank,z1e3_volume)
         print("Watering Zone 1: Emitter 3")
 
     def z1e4(self):
@@ -931,7 +1045,7 @@ class Application(tk.Frame):
             z1e4_volume = self.entryz1e4.get()
             z1e4_tank = self.comboz1e4.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z1e4_tank,z1e4_volume)
+            Fluids_Water.subzone_Water(f,1,4,z1e4_tank,z1e4_volume)
         print("Watering Zone 1: Emitter 4")
 
     def z2e1(self):
@@ -939,7 +1053,7 @@ class Application(tk.Frame):
             z2e1_volume = self.entryz2e1.get()
             z2e1_tank = self.comboz2e1.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z2e1_tank,z2e1_volume)
+            Fluids_Water.subzone_Water(f,2,1,z2e1_tank,z2e1_volume)
         print("Watering Zone 2: Emitter 1")
 
     def z2e2(self):
@@ -947,7 +1061,7 @@ class Application(tk.Frame):
             z2e2_volume = self.entryz2e2.get()
             z2e2_tank = self.comboz2e2.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z2e2_tank,z2e2_volume)
+            Fluids_Water.subzone_Water(f,2,2,z2e2_tank,z2e2_volume)
         print("Watering Zone 2: Emitter 2")
 
     def z2e3(self):
@@ -955,7 +1069,7 @@ class Application(tk.Frame):
             z2e3_volume = self.entryz2e3.get()
             z2e3_tank = self.comboz2e3.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z2e3_tank,z2e3_volume)
+            Fluids_Water.subzone_Water(f,2,3,z2e3_tank,z2e3_volume)
         print("Watering Zone 2: Emitter 3")
 
     def z2e4(self):
@@ -963,7 +1077,7 @@ class Application(tk.Frame):
             z2e4_volume = self.entryz2e4.get()
             z2e4_tank = self.comboz2e4.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z2e4_tank,z2e4_volume)
+            Fluids_Water.subzone_Water(f,2,4,z2e4_tank,z2e4_volume)
         print("Watering Zone 2: Emitter 4")
 
     def z3e1(self):
@@ -971,7 +1085,7 @@ class Application(tk.Frame):
             z3e1_volume = self.entryz3e1.get()
             z3e1_tank = self.comboz3e1.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z3e1_tank,z3e1_volume)
+            Fluids_Water.subzone_Water(f,3,1,z3e1_tank,z3e1_volume)
         print("Watering Zone 3: Emitter 1")
 
     def z3e2(self):
@@ -979,7 +1093,7 @@ class Application(tk.Frame):
             z3e2_volume = self.entryz3e2.get()
             z3e2_tank = self.comboz3e2.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z3e2_tank,z3e2_volume)
+            Fluids_Water.subzone_Water(f,3,2,z3e2_tank,z3e2_volume)
         print("Watering Zone 3: Emitter 2")
 
     def z3e3(self):
@@ -987,7 +1101,7 @@ class Application(tk.Frame):
             z3e3_volume = self.entryz3e3.get()
             z3e3_tank = self.comboz3e3.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z3e3_tank,z3e3_volume)
+            Fluids_Water.subzone_Water(f,3,3,z3e3_tank,z3e3_volume)
         print("Watering Zone 3: Emitter 3")
 
     def z3e4(self):
@@ -995,18 +1109,8 @@ class Application(tk.Frame):
             z3e4_volume = self.entryz3e4.get()
             z3e4_tank = self.comboz3e4.get()
             f = Fluids_Water()
-            Fluids_Water.subzone_Water(f,1,2,z3e4_tank,z3e4_volume)
+            Fluids_Water.subzone_Water(f,3,4,z3e4_tank,z3e4_volume)
         print("Watering Zone 3: Emitter 4")
-
-    def output_excel(filename):
-        with open(filename, mode='a') as test_file:
-            test_writer = csv.writer(test_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-            #NEEDS CONSTRUCTION OF LABELS
-            time = datetime.datetime.now().strftime("%Y%D%M, %H:%M")
-            data = ['1,2,3,4,5'] #PUT ARDUINO OUTPUT HERE
-            data = data[0].split(',')
-            data = [time,data[0],data[1],data[2],data[3],data[4]]
-            test_writer.writerow(data)
 
     def excel_test(filename): #USE TO CREATE COLUMN HEADERS?
         with open(filename, mode='w') as test_file:
@@ -1014,25 +1118,7 @@ class Application(tk.Frame):
             data = ['Time,Temperature,Humidity,Weight']
             data = data[0].split(',')
             test_writer.writerow(data)
-
-        '''
-        #label creation to be used in displaying time for sequences
-        #need to fix/finish integration
-        self.time_display_frame = LabelFrame(self, text = "Time Display", padx = 5, pady = 5)
-        self.time_display_frame.grid(row = 0, column = 2, rowspan = 2)
-
-        self.sequence1_label = Label(self.time_display_frame, text = "Sequence 1").grid(row = 0, column = 0)
-        self.sequence2_label = Label(self.time_display_frame, text = "Sequence 2").grid(row = 1, column = 0)
-        self.sequence3_label = Label(self.time_display_frame, text = "Sequence 3").grid(row = 2, column = 0)
-        self.sequence4_label = Label(self.time_display_frame, text = "Sequence 4").grid(row = 3, column = 0)
-        self.sequence5_label = Label(self.time_display_frame, text = "Sequence 5").grid(row = 4, column = 0)
-
-        self.sequence1_time_label = Label(self.time_display_frame, text = "Sequence 1").grid(row = 0, column = 1)
-        self.sequence2_time_label = Label(self.time_display_frame, text = "Sequence 2").grid(row = 1, column = 1)
-        self.sequence3_time_label = Label(self.time_display_frame, text = "Sequence 3").grid(row = 2, column = 1)
-        self.sequence4_time_label = Label(self.time_display_frame, text = "Sequence 4").grid(row = 3, column = 1)
-        self.sequence5_time_label = Label(self.time_display_frame, text = "Sequence 5").grid(row = 4, column = 1)
-        '''
+    '''
 
     #creates the menu
     def Add_Menu(self):
