@@ -807,15 +807,15 @@ class Application(tk.Frame):
         if tkMessageBox.askyesno('Confirmation Window','Are you sure?'):
             ser1 = serial.Serial(port='COM3', baudrate=9600, timeout=1)
             time.sleep(1)
-            ser1.write(b'Zero')
+            ser1.write(b'z')
             ser1.close()
             ser2 = serial.Serial(port='COM4', baudrate=9600, timeout=1)
             time.sleep(1)
-            ser2.write(b'Zero')
+            ser2.write(b'z')
             ser2.close()
             ser3 = serial.Serial(port='COM5', baudrate=9600, timeout=1)
             time.sleep(1)
-            ser3.write(b'Zero')
+            ser3.write(b'z')
             ser3.close()
             print("Zero")
             #SERIAL PRINT ZERO COMMAND
