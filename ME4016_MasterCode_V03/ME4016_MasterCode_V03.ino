@@ -47,27 +47,28 @@ class LoadCells{
     byte loadCellClock; //what is the clock pin
     int loadCellOffset[]; //what is the voltage offset
     int loadCellCali[]; //what is voltage calibrated gain
-    HX711 scale[]; //initializes the load cell scale using the HX711 library
+    //HX711 scale[]; //initializes the load cell scale using the HX711 library
+    HX711 scale1;
     public:
-    LoadCells(byte pinsForLoadCell[],int offsetForLoadCell[], int caliForLoadCell[],byte clockForLoadCell){
+    LoadCells(byte pinsForLoadCell[],byte offsetForLoadCell[], byte caliForLoadCell[],byte clockForLoadCell){
       loadCellAmount = sizeof(pinsForLoadCell); //sets load cell amount
       loadCellPins[loadCellAmount]; //sets size for pin array
       loadCellReading[loadCellAmount]; //sets size for reading array
       loadCellOffset[loadCellAmount]; //sets size for offset array
       loadCellCali[loadCellAmount]; //sets size for calibration array
-      scale[loadCellAmount]; //sets size for scale array
+      //scale[loadCellAmount]; //sets size for scale array
       loadCellClock = clockForLoadCell; //sets clock pin
-      pinMode(loadCellClock, OUTPUT);
-      digitalWrite(loadCellClock,LOW);
+      //pinMode(loadCellClock, OUTPUT);
+      //digitalWrite(loadCellClock,LOW);
       
       for(int i = 0; i<loadCellAmount; i++){ 
         loadCellPins[i] = pinsForLoadCell[i]; // sets each individual pin
         loadCellOffset[i] = offsetForLoadCell[i]; // sets each individual offset
         loadCellCali[i] = caliForLoadCell[i]; // sets each individual calibration
         //pinMode(loadCellPins[i], INPUT); //POSSIBLY REMOVE?
-        scale[i].begin(loadCellPins[i],loadCellClock); //initializes each scale
-        scale[i].set_scale(loadCellCali[i]); //sets the scale calibration
-        scale[i].set_offset(loadCellOffset[i]); //sets the scale offset
+        //scale[i].begin(loadCellPins[i],loadCellClock); //initializes each scale
+        //scale[i].set_scale(loadCellCali[i]); //sets the scale calibration
+        //scale[i].set_offset(loadCellOffset[i]); //sets the scale offset
       }
     }
     void setLoadCellPins(byte pinsForLoadCell[]){ //sets each individual load cell pin and amount
@@ -80,14 +81,17 @@ class LoadCells{
     }
     void zeroLoadCells(){ //TO BE DONE!
       for(int i = 0; i < loadCellAmount;i++){
-        scale[i].tare(); //should work?
+        //scale[i].tare(); //should work?
       }
     }
     void readLoadCells(){ // Reads each individual load cell and prints
       //int voltageReading[loadCellAmount];
       for(int i = 0; i < loadCellAmount;i++){
-        loadCellReading[i] = scale[i].get_units(10); //gets the average for 10 readings
-        Serial.println(loadCellReading[i],3);
+        scale1.begin(loadCellPins[i],loadCellClock);
+        long reading = scale1.read_average(10);
+        //loadCellReading[i] = scale[i].get_units(10); //gets the average for 10 readings
+        //Serial.println(loadCellReading[i],3);
+        Serial.println(reading);
       }
     }
 };
@@ -143,9 +147,12 @@ void useInterrupt(boolean v) {
 //read pins, offset, calibration factors, and clock pin for all the load cells
 //HARD CODED TEMPORARILY
 static byte loadCellClockInput = 16;
-static byte loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
-static int offsetCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-static int caliCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static byte loadCellPinInputs[2] = {23, 25};
+static byte offsetCellPinInputs[2] = {1, 1};
+static byte caliCellPinInputs[2] = {1, 1};
+//static byte loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
+//static int offsetCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+//static int caliCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 /*all the valves, flow sensors, pumps, and load cells initialize*/
@@ -160,7 +167,7 @@ Valve emitterValveB(18,2,'e'); //Emitter B; Subzone 2
 Valve emitterValveC(19,3,'e'); //Emitter C; Subzone 3
 Valve emitterValveD(20,4,'e'); //Emitter D; Subzone 4
 
-const int RHT03_DATA_PIN = 4; // RHT03 data pin
+const int RHT03_DATA_PIN = 14; // RHT03 data pin
 RHT03 rht; // This creates a RTH03 object, which we'll use to interact with the sensor
 
 LoadCells loadCells(loadCellPinInputs, offsetCellPinInputs, caliCellPinInputs, loadCellClockInput); //sets up the load cell function
@@ -215,7 +222,7 @@ void readData()
       Serial.println("Load Cells Read"); //confirms load cells read
     }
     else if (go == 't'){ //read loads and returns array of readings
-      //loadCells.readLoadCells();
+
       Serial.println(readHumid());
       Serial.println(readTemp());
       Serial.println("Temperature Read"); //confirms load cells read
@@ -228,27 +235,29 @@ void readData()
 
 /* reads the volume */
 void readingVolume(int inputVolume){
+  Serial.println("reading");
   long startTime = millis();
   float A = 32.195;
   float B = -706.12;
-  long endTime = inputVolume*A + B;
+  long endTime = startTime + inputVolume*A + B;
   pulses = 0;
   float C = 0.2324;
   float D = 14.306 + 20 ;
   uint16_t endPulses = inputVolume*C + D;
   while(millis() < endTime && pulses < endPulses){
-    
+    Serial.print('.');
   }
   pulses = 0;
   lastflowpinstate = LOW;
   flowrate = 0;
   lastflowratetimer = 0;
   startTime = 0;
-  
+  Serial.println("done");
 }
 
 /*Waters an individual Subzone*/
 void waterSubzone(Valve tank, Valve emitter, Valve pump){
+  Serial.println("watering");
   emitter.on();
   tank.on();
   pump.on();
@@ -256,6 +265,7 @@ void waterSubzone(Valve tank, Valve emitter, Valve pump){
   pump.off();
   tank.off();
   emitter.off();
+  Serial.println("finished");
 }
 /*Reads the relative humidity*/
 float readHumid(){
@@ -265,7 +275,7 @@ float readHumid(){
   while(rht.update()< 1)
   {
     if(millis()>startTime){
-      return NULL;
+      return 0;
     }
     delay(RHT_READ_INTERVAL_MS);
   }
@@ -280,7 +290,7 @@ float readTemp(){
   while(rht.update()< 1)
   {
     if(millis()>startTime){
-      return NULL;
+      return 0;
     }
     delay(RHT_READ_INTERVAL_MS);
   }
