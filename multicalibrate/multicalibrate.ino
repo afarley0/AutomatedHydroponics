@@ -6,10 +6,10 @@
 int eepromAddressCal = 1; //address where calibration and offset values will be stored
 int eepromAddressOffset = 6;
 const int LOADCELL_SCK_PIN = 16; //HX711 constructor
-const int LOADCELL_DOUT_PIN[] = {18};
-static int loadCellAmount = 1;
-volatile float cali[1];
-volatile float offset[1];
+const int LOADCELL_DOUT_PIN[] = {18, 20};
+static int loadCellAmount = 2;
+volatile float cali[2];
+volatile float offset[2];
 //HX711 constructor (dout pin, sck pin):
 //HX711_ADC LoadCell(LOADCELL_DOUT_PIN,LOADCELL_SCK_PIN);
 //HX711 scale;
@@ -88,7 +88,7 @@ long t;
 //  Serial.println("For manual edit, send 'c' from serial monitor");
 //  Serial.println("***");
 //}
-HX711 scale[1];
+HX711 scale[2];
 
 void setup() {
   Serial.begin(9600); delay(10);

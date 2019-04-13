@@ -39,15 +39,15 @@ class Valve{
 }; 
 /*temporarily hard coded loadcell parameters*/
 static byte loadCellClockInput = 16; //which clock pin will the load cells use
-static int loadCellPinInputs[] = {18}; //what pins correspond with the load cells; CHECK THE LOAD CELL EXCEL SHEET FOR PINS, LOAD CELL NUMBERS, AND WIRING
-static byte offsetCellPinInputs[] = {1}; //The offset values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
-static byte caliCellPinInputs[] = {1};//The calibration values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
+static int loadCellPinInputs[] = {18, 20}; //what pins correspond with the load cells; CHECK THE LOAD CELL EXCEL SHEET FOR PINS, LOAD CELL NUMBERS, AND WIRING
+static long offsetCellPinInputs[] = {-8745, 49078}; //The offset values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
+static float caliCellPinInputs[] = {-440.94, -420.80};//The calibration values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
 
 //static byte loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
 //static int offsetCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 //static int caliCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-#define loadCellAmount 1 // How many load cells are you using
+#define loadCellAmount 2 // How many load cells are you using
 HX711 scale1[loadCellAmount]; //creates scale object
 
 const int RHT03_DATA_PIN = 14; // RHT03 data pin
