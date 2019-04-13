@@ -1,6 +1,6 @@
-#include <HX711.h>
+#include <HX711.h> //Library A (scale.begin())
 #include <config.h>
-#include <HX711_ADC.h>
+#include <HX711_ADC.h>//Library B
 #include <EEPROM.h>
 
 int eepromAddressCal = 1; //address where calibration and offset values will be stored
@@ -20,12 +20,12 @@ void calibrate() {
   Serial.println("It is assumed that the mcu was started with no load applied to the load cell.");
   Serial.println("Now, place your known mass on the loadcell,");
   Serial.println("then send the weight of this mass (i.e. 100.0) from serial monitor.");
-  float mass = 0;
-  boolean f = 0;
+  float mass = 0; //known weight we input
+  boolean f = 0; //waiting value
   while (f == 0) {
-    LoadCell.update();
+    LoadCell.update(); //
     if (Serial.available() > 0) {
-      mass = Serial.parseFloat();
+      mass = Serial.parseFloat(); //reads the known wieght
       if (mass != 0) {
         Serial.print("Known mass is: ");
         Serial.println(mass);
@@ -36,11 +36,11 @@ void calibrate() {
       }
     }
   }
-  delay(1000);
-  float c = LoadCell.getData() / mass;
-  float offset = 0;
+  //delay(1000);
+  float c = LoadCell.getData() / mass; //calibration 
+  float offset = 0; //original offset
   
-  LoadCell.setCalFactor(c);
+  LoadCell.setCalFactor(c); //sets the calibration
   Serial.print("Calculated calibration value is: ");
   Serial.print(c);
   Serial.println(", use this in your project sketch");
@@ -202,11 +202,3 @@ void loop() {
     Serial.println("Tare complete");
   }
 }
-
-
-
-
-
-
-
-
