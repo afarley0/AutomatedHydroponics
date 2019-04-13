@@ -327,19 +327,24 @@ class Fluids_Timer(threading.Thread):
         self.stopped = event
 #SEND TIMECOMBO WHEN SENDALL IS PRESSED?
     def run(self):
+        stopFluid = threading.Event()
+        thread_fluid = Fluids_Timer(stopFluid)
+        thread_fluid.start()
         while not self.stopped.wait(5):
             print("fluid test") #SEND FLUID COMMAND
             self.systemTime = datetime.datetime.now().strftime("%H:%M")
-            self.timeSetting = Application().timecombo
+            self.timeSetting = Application.time_combo.get()
             print(systemTime)
             print(timeSetting)
             if systemTime == timeSetting:
                 print('fluid test')
+                #Application.subzone(Application(),1,)
 
+'''
 stopFluid = threading.Event()
 thread_fluid = Fluids_Timer(stopFluid)
 thread_fluid.start()
-
+'''
 
 #MIGHT NOT NEED THIS
 '''
@@ -849,6 +854,7 @@ class Application(tk.Frame):
     #NEEDS TO SEND ALL VOLUMES AND TANK DESIGNATION TO VARIABLES, CHECK AND START AUTOMATIC WATERING
     #VOLUME FROM ENTRY BOXES, TANKS FROM COMBO BOXES, TIME FROM COMBO BOX
         print("Sent")
+        self.startTimer()
         #auto_state = self.auto_check.get() #NEED TO MAKE SURE CHECKBOX VALUE UPDATES
         #testVar = auto_state.get()
     #TEST FOR AUTOMATIC WATERING
@@ -970,6 +976,10 @@ class Application(tk.Frame):
             #GET VOLUME AND TANK FROM BOXES
         else:
             print("Canceled")
+
+    def startTimer(self):
+        f = Fluids_Timer()
+        Fluids_Timer.run(f)
 
     #MIGHT DELETE ALL OF THIS
     '''
