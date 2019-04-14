@@ -437,6 +437,7 @@ class Application(tk.Frame):
         self.multi_seq_list_copy = []#stores copy of above
         self.sequence_photo_dict = {}#stores counters for pictures
         self.locations=[]#stores locations of grid clicks: not currently used
+        self.fluidTimer = None#stores variable to start fluid timer on first run
 
         #creates dictionary to store desired
         self.timer_dict = {}
@@ -984,8 +985,14 @@ class Application(tk.Frame):
         self.fluids_dict['z3e3tank'] = self.comboz3e3.get()
         self.fluids_dict['z3e4tank'] = self.comboz3e4.get()
 
-        stopFluid = threading.Event()
-        Fluids_Timer(stopFluid, root, self.fluids_dict)
+        self.stopFluid = threading.Event()
+
+        if self.fluidTimer:
+            self.fluidTimer.stopped.set()
+            self.fluidTimer = Fluids_Timer(self.stopFluid, root, self.fluids_dict)
+        else:
+            self.fluidTimer = Fluids_Timer(self.stopFluid, root, self.fluids_dict)
+
 
 
     #creates the menu
