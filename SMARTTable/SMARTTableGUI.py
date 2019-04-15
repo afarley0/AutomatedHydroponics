@@ -249,6 +249,8 @@ class Load_Cell_Timer(threading.Thread):
     def __init__(self,event):
         threading.Thread.__init__(self)
         self.stopped = event
+        self.setDaemon(True)
+        #self.start()
 
     def run(self):
         while not self.stopped.wait(5):
@@ -258,15 +260,19 @@ class Load_Cell_Timer(threading.Thread):
     def load_cell_read(self):
         ser1 = serial.Serial('COM8',baudrate=9600,timeout=1)
         time.sleep(1)
-        ser1.write(b't')
-        reading = ''
         reading_array = [0]*34
         index = 0
+        '''
+        ser1.write(b't')
+        reading = ''
+
+
         while reading != ';':
             data = ser1.read()
             reading = str(data)
             reading_array[index] = data
             index = index + 1
+        '''
         ser1.write(b'r')
         reading = ''
         while reading != ';':
@@ -277,6 +283,7 @@ class Load_Cell_Timer(threading.Thread):
         print(reading_array)
         time.sleep(1)
         ser1.close()
+        '''
         ser2 = serial.Serial('COM9',baudrate=9600,timeout=1)
         time.sleep(1)
         ser2.write(b'r')
@@ -301,6 +308,7 @@ class Load_Cell_Timer(threading.Thread):
         print(reading_array)
         time.sleep(1)
         ser3.close()
+        '''
         self.output_excel(reading_array)
 
     def output_excel(self,array):
@@ -322,67 +330,106 @@ thread_load.start()
 
 class Fluids_Timer(threading.Thread):
 
-    def __init__(self,event,tk_root,timecombo):
+    def __init__(self,event,tk_root,dict):
         threading.Thread.__init__(self)
         self.stopped = event
-        self.waitTime = timecombo
+        self.fluids_dict = dict
         self.setDaemon(True)
         self.start()
+        self.threadBool = False
+        print(self.fluids_dict['waitTime'])
 
-#SEND TIMECOMBO WHEN SENDALL IS PRESSED?
     def run(self):
-        while not self.stopped.wait(5):
+        while not self.stopped.wait(self.fluids_dict['waitTime']):
             print("fluid test") #SEND FLUID COMMAND
-            print(self.waitTime)
-            #print(systemTime)
-            #print(timeSetting)
-            #if systemTime == timeSetting:
-            #    print('fluid test')
-                #Application.subzone(Application(),1,)
+            print(self.threadBool)
 
-'''
-stopFluid = threading.Event()
-thread_fluid = Fluids_Timer(stopFluid)
-thread_fluid.start()
-'''
+            app.multi_seq_list_copy.append('waterAll')
 
-#MIGHT NOT NEED THIS
-'''
-class Fluids_Water(tk.Frame):
-    #def __init__(self):
+        while not self.threadBool:
+            print('test1')
+            pass
+        print('test2')
+        self.waterAll()
+        self.threadBool = False
 
-    def subzone_Water(self,zone,subzone,tank,volume):
-        if zone == 1:
-            #OPEN SERIAL 1 AND SEND INFO
-            sertest = serial.Serial(port='COM10', baudrate=9600, timeout=1)
-            time.sleep(1)
-            sertest.write(b'w')
-            sertest.write(subzone)
-            sertest.write(volume)
-            data = sertest.readline().decode().split('\r\n')
-            numpoints = 1 #CHANGE TO AMOUNT OF INPUTS
-            for i in range(0,numpoints):
-                datalist = [0]*numpoints
-                data = self.getValues(sertest)
-                print(type(data))
-                #data = int(float(data))
-                datalist[i] = data
-                dataAvg = sum(datalist)/numpoints
-            #ser1.write(b'g') #INFO FOR VOLUME AND TANK, SEND PROPER COMMAND
-            #output = ser1.readline().decode().split('\r\n')
-            #output = self.getValues()
-            #output = int(output[0])
-            print(datalist)
-            time.sleep(1)
-            sertest.close()
+    def zoneWater(self,sub,ser,tank,volume):
+        s = sub
+        t = tank
+        v = volume
 
-        elif zone == 2:
-            #OPEN SERIAL 2 AND SEND INFO
-            print(2)
-        elif zone == 3:
-            #OPEN SERIAL 3 AND SEND INFO
-            print(3)
-'''
+        sending = 'w ' + str(s) + ' ' + str(v)
+        print(sending)
+        sertest = serial.Serial(port=ser, baudrate=9600, timeout=None)
+        time.sleep(1)
+        sertest.write(sending)
+        data = sertest.read(1)
+        time.sleep(1)
+        sertest.close()
+        print data
+        return data
+
+    def waterAll(self):
+
+        response = self.zoneWater('1','COM6',self.fluids_dict['z1e1tank'],self.fluids_dict['z1e1volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('2','COM6',self.fluids_dict['z1e2tank'],self.fluids_dict['z1e2volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('3','COM6',self.fluids_dict['z1e3tank'],self.fluids_dict['z1e3volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('4','COM6',self.fluids_dict['z1e4tank'],self.fluids_dict['z1e4volume'])
+        if response == 'e':
+            return
+        '''
+        response = self.zoneWater('1','COM8',self.fluids_dict['z2e1tank'],self.fluids_dict['z2e1volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('2','COM8',self.fluids_dict['z2e2tank'],self.fluids_dict['z2e2volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('3','COM8',self.fluids_dict['z2e3tank'],self.fluids_dict['z2e3volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('4','COM8',self.fluids_dict['z2e4tank'],self.fluids_dict['z2e4volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('1','COM9',self.fluids_dict['z3e1tank'],self.fluids_dict['z3e1volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('2','COM9',self.fluids_dict['z3e2tank'],self.fluids_dict['z3e2volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('3','COM9',self.fluids_dict['z3e3tank'],self.fluids_dict['z3e3volume'])
+        if response == 'e':
+            return
+        response = self.zoneWater('4','COM9',self.fluids_dict['z3e4tank'],self.fluids_dict['z3e4volume'])
+        if response == 'e':
+            return
+        '''
+        self.timeStr = self.fluids_dict['desiredTime']
+        self.timeDate = datetime.datetime.now().strftime('%m %d %y')
+        self.timeEnd = self.timeDate + ' ' + self.timeStr
+        self.timeEnd = datetime.datetime.strptime(self.timeEnd, '%m %d %y %I:%M:%S')
+        self.timeNow = datetime.datetime.now().strftime('%m %d %y %I:%M:%S')
+        self.timeNow = datetime.datetime.strptime(self.timeNow, '%m %d %y %I:%M:%S')
+
+        self.timeDiff = self.timeEnd-self.timeNow
+        print(self.timeNow)
+        print(self.timeEnd)
+        print(self.timeDiff)
+        if self.timeDiff.total_seconds() < 0:
+            self.timeDiff = self.timeDiff + datetime.timedelta(days=1) - datetime.timedelta(hours=12)
+        print(self.timeDiff)
+        self.fluids_dict['waitTime'] = self.timeDiff.total_seconds()
+        print(self.fluids_dict['waitTime'])
+
+        #ser1.open()
+        #OPEN SERIAL PORT AND SEND COMMAND TO WATER
+        #ASSIGN TANK DESIGNATION AND VOLUME TO VARIABLES
+        #GET VOLUME AND TANK FROM BOXES
 
 #main class
 class Application(tk.Frame):
@@ -409,6 +456,7 @@ class Application(tk.Frame):
         self.multi_seq_list_copy = []#stores copy of above
         self.sequence_photo_dict = {}#stores counters for pictures
         self.locations=[]#stores locations of grid clicks: not currently used
+        self.fluidTimer = None#stores variable to start fluid timer on first run
 
         #creates dictionary to store desired
         self.timer_dict = {}
@@ -678,16 +726,16 @@ class Application(tk.Frame):
         fluids_frame.grid_columnconfigure(2,minsize=100)
 
         #creates buttons within fluid frame
-        self.z1e1_button = tk.Button(fluids_frame, text="Zone 1: Emitter 1", command=lambda: self.subzone(1,'COM8',self.comboz1e1.get(),self.entryz1e1.get()))
+        self.z1e1_button = tk.Button(fluids_frame, text="Zone 1: Emitter 1", command=lambda: self.subzone(1,'COM7',self.comboz1e1.get(),self.entryz1e1.get()))
         self.z1e1_button.grid(column=0,row=0,padx=5,pady=5)
 
-        self.z1e2_button = tk.Button(fluids_frame, text="Zone 1: Emitter 2", command=lambda: self.subzone(2,'COM8',self.comboz1e2.get(),self.entryz1e2.get()))
+        self.z1e2_button = tk.Button(fluids_frame, text="Zone 1: Emitter 2", command=lambda: self.subzone(2,'COM7',self.comboz1e2.get(),self.entryz1e2.get()))
         self.z1e2_button.grid(column=0,row=1,padx=5,pady=5)
 
-        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=lambda: self.subzone(3,'COM8',self.comboz1e3.get(),self.entryz1e3.get()))
+        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=lambda: self.subzone(3,'COM7',self.comboz1e3.get(),self.entryz1e3.get()))
         self.z1e3_button.grid(column=0,row=2,padx=5,pady=5)
 
-        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=lambda: self.subzone(4,'COM8',self.comboz1e4.get(),self.entryz1e4.get()))
+        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=lambda: self.subzone(4,'COM7',self.comboz1e4.get(),self.entryz1e4.get()))
         self.z1e4_button.grid(column=0,row=3,padx=5,pady=5)
 
         self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=lambda: self.subzone(1,'COM9',self.comboz2e1.get(),self.entryz2e1.get()))
@@ -764,7 +812,7 @@ class Application(tk.Frame):
         self.labelz3e4.grid(column=2,row=11,sticky='e')
 
         #places comboboxes in fluid frame
-        self.time_combo = ttk.Combobox(fluids_frame, width=20, values=("1:00","2:00","3:00","4:00","5:00","6:00","7:00","8:00","9:00","10:00","11:00","12:00"))
+        self.time_combo = ttk.Combobox(fluids_frame, width=20, values=("1:00:00","2:00:00","3:00:00","4:00:00","5:00:00","6:28:00","6:29:00","8:00:00","9:00:00","10:00:00","11:00:00","12:00:00"))
         self.time_combo.grid(column=3,row=1,sticky='e')
 
         self.comboz1e1 = ttk.Combobox(fluids_frame,width=10, values=("Tank 1","Tank 2","Tank 3","Tank 4"))
@@ -850,69 +898,12 @@ class Application(tk.Frame):
         self.timecombo = self.time_combo.get()
 
     def sendall(self, auto_state, timecombo):
-
-    #NEEDS TO SEND ALL VOLUMES AND TANK DESIGNATION TO VARIABLES, CHECK AND START AUTOMATIC WATERING
-    #VOLUME FROM ENTRY BOXES, TANKS FROM COMBO BOXES, TIME FROM COMBO BOX
-        print("Sent")
-        self.startTimer()
-        #auto_state = self.auto_check.get() #NEED TO MAKE SURE CHECKBOX VALUE UPDATES
-        #testVar = auto_state.get()
-    #TEST FOR AUTOMATIC WATERING
-    #LOOP SOMEWHERE?
-    #systemTime = time.strftime("%Y %m %d %H %M", time.localtime())
-        systemTime = datetime.datetime.now().strftime("%H:%M")
-        timeVariable = timecombo
-        print(timeVariable)
-
-    #NEED TO MAKE LOOP
-    #MAKE SURE IT ONLY CHECKS TIME ONCE A MINUTE?
-        #print(timeVariable)
         if auto_state == 0:
-            print("test0")
-            if systemTime == timeVariable:
-            #SEND COMMAND TO ARDUINO FOR WATERING SEQUENCE HERE
-                print('Yes')
+            print("Not Automatic")
 
         if auto_state == 1:
-            print("test1")
-
-
-        #VALUES TO SEND TO ARDUINO FOR FLUID VOLUMES
-        z1e1_volume = self.entryz1e1.get()
-        z1e2_volume = self.entryz1e2.get()
-        z1e3_volume = self.entryz1e3.get()
-        z1e4_volume = self.entryz1e4.get()
-        z2e1_volume = self.entryz2e1.get()
-        z2e2_volume = self.entryz2e2.get()
-        z2e3_volume = self.entryz2e3.get()
-        z2e4_volume = self.entryz2e4.get()
-        z3e1_volume = self.entryz3e1.get()
-        z3e2_volume = self.entryz3e2.get()
-        z3e3_volume = self.entryz3e3.get()
-        z3e4_volume = self.entryz3e4.get()
-        print(z1e1_volume)
-        print(z1e2_volume)
-        print(z1e3_volume)
-        print(z1e4_volume)
-
-        #VALUES TO SEND TO ARDUINO FOR TANK DESIGNATION
-        z1e1_tank = self.comboz1e1.get()
-        z1e2_tank = self.comboz1e2.get()
-        z1e3_tank = self.comboz1e3.get()
-        z1e4_tank = self.comboz1e4.get()
-        z2e1_tank = self.comboz2e1.get()
-        z2e2_tank = self.comboz2e2.get()
-        z2e3_tank = self.comboz2e3.get()
-        z2e4_tank = self.comboz2e4.get()
-        z3e1_tank = self.comboz3e1.get()
-        z3e2_tank = self.comboz3e2.get()
-        z3e3_tank = self.comboz3e3.get()
-        z3e4_tank = self.comboz3e4.get()
-        print(z1e1_tank)
-        print(z1e2_tank)
-        print(z1e3_tank)
-        print(z1e4_tank)
-
+            print("Automatic Timer Started")
+            self.startTimer()
 
     def zero(self):
         #CALL ZERO LOAD CELL FUNCTION
@@ -935,40 +926,32 @@ class Application(tk.Frame):
             print("Zero")
             #SERIAL PRINT ZERO COMMAND
 
-    def getValues(self,serial):
-        sertest = serial
-        sertest.write(b'g')
-        data = sertest.readline().decode().split('\r\n')
-
-
-        return data[0]
-
     #MIGHT REPLACE ALL BUTTON DEFINITIONS
     #PUT self.subzone(zone,sub,ser,tank,volume) in button command, might need lambda
     def subzone(self,sub,ser,tank,volume):
         if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
+            #self.subzone(sub,ser,tank,volume)
+            #if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
             s = sub
             t = tank
             v = volume
 
             sending = 'w ' + str(s) + ' ' + str(v)
             print(sending)
-            sertest = serial.Serial(port=ser, baudrate=9600, timeout=None)
+            self.sertest = serial.Serial(port=ser, baudrate=9600, timeout=None)
             time.sleep(1)
             #sertest.write(b'w')
-            sertest.write(sending)
-            #sertest.write(s)
-            #sertest.write(v)
-            #f = Fluids_Water()
-            #Fluids_Water.subzone_Water(f,z,s,t,v)
+            self.sertest.write(sending)
 
-            data = sertest.read(1)#_until(';')
+            #data = sertest.read(1)#_until(';')
 
-                #data = sertest.readline().decode()#.split('\r\n')
-            print(data)
+            #time.sleep(1)
+            self.running = True
+            self.readyToMoveBool = False
+            s=""
+            self.Run_Until_Stop(s)
 
-            time.sleep(1)
-            sertest.close()
+            #print(data)
 
             #ser1.open()
             #OPEN SERIAL PORT AND SEND COMMAND TO WATER
@@ -978,22 +961,23 @@ class Application(tk.Frame):
             print("Canceled")
 
     def startTimer(self):
-        timeStr = self.time_combo.get()
-        timeDate = datetime.datetime.now().strftime('%m %d %y')
-        timeEnd = timeDate + ' ' + timeStr
-        timeEnd = datetime.datetime.strptime(timeEnd, '%m %d %y %I:%M')
-        timeNow = datetime.datetime.now().strftime('%m %d %y %I:%M')
-        timeNow = datetime.datetime.strptime(timeNow, '%m %d %y %I:%M')
+        self.timeStr = self.time_combo.get()
+        self.timeDate = datetime.datetime.now().strftime('%m %d %y')
+        self.timeEnd = self.timeDate + ' ' + self.timeStr
+        self.timeEnd = datetime.datetime.strptime(self.timeEnd, '%m %d %y %I:%M:%S')
+        self.timeNow = datetime.datetime.now().strftime('%m %d %y %I:%M:%S')
+        self.timeNow = datetime.datetime.strptime(self.timeNow, '%m %d %y %I:%M:%S')
 
-        timeDiff = timeEnd-timeNow
-        print(timeNow)
-        print(timeEnd)
-        print(timeDiff)
-        if timeDiff.total_seconds() < 0:
-            timeDiff = timeDiff + datetime.timedelta(days=1) - datetime.timedelta(hours=12)
-        print(timeDiff)
+        self.timeDiff = self.timeEnd-self.timeNow
+        print(self.timeNow)
+        print(self.timeEnd)
+        print(self.timeDiff)
+        if self.timeDiff.total_seconds() < 0:
+            self.timeDiff = self.timeDiff + datetime.timedelta(days=1) - datetime.timedelta(hours=12)
+        print(self.timeDiff)
 
         self.fluids_dict = {}
+        self.fluids_dict['desiredTime'] = self.timeStr
         self.fluids_dict['waitTime'] = self.timeDiff.total_seconds()
         self.fluids_dict['z1e1volume'] = self.entryz1e1.get()
         self.fluids_dict['z1e2volume'] = self.entryz1e2.get()
@@ -1007,9 +991,27 @@ class Application(tk.Frame):
         self.fluids_dict['z3e2volume'] = self.entryz3e2.get()
         self.fluids_dict['z3e3volume'] = self.entryz3e3.get()
         self.fluids_dict['z3e4volume'] = self.entryz3e4.get()
+        self.fluids_dict['z1e1tank'] = self.comboz1e1.get()
+        self.fluids_dict['z1e2tank'] = self.comboz1e2.get()
+        self.fluids_dict['z1e3tank'] = self.comboz1e3.get()
+        self.fluids_dict['z1e4tank'] = self.comboz1e4.get()
+        self.fluids_dict['z2e1tank'] = self.comboz2e1.get()
+        self.fluids_dict['z2e2tank'] = self.comboz2e2.get()
+        self.fluids_dict['z2e3tank'] = self.comboz2e3.get()
+        self.fluids_dict['z2e4tank'] = self.comboz2e4.get()
+        self.fluids_dict['z3e1tank'] = self.comboz3e1.get()
+        self.fluids_dict['z3e2tank'] = self.comboz3e2.get()
+        self.fluids_dict['z3e3tank'] = self.comboz3e3.get()
+        self.fluids_dict['z3e4tank'] = self.comboz3e4.get()
 
-        stopFluid = threading.Event()
-        Fluids_Timer(stopFluid, root, fluids_dict)
+        self.stopFluid = threading.Event()
+
+        if self.fluidTimer:
+            self.fluidTimer.stopped.set()
+            self.fluidTimer = Fluids_Timer(self.stopFluid, root, self.fluids_dict)
+        else:
+            self.fluidTimer = Fluids_Timer(self.stopFluid, root, self.fluids_dict)
+
 
 
     #creates the menu
@@ -1597,9 +1599,16 @@ class Application(tk.Frame):
                 self.Display_Location()
 
             #reads one byte at a time
-            bytestoread =ser.inWaiting()
+            bytestoread =self.sertest.inWaiting()
             if bytestoread > 0:
-                s = ser.read(bytestoread)
+                s = self.sertest.read(bytestoread)
+
+            if s == "g":
+                self.running = False
+                self.readyToMoveBool = True
+                self.Disable_Widgets(False)
+                self.sertest.close()
+                print(s)
 
             #continues repeating until movement is done
             if self.running:
@@ -1905,117 +1914,132 @@ class Application(tk.Frame):
         #if there is a sequence queued
         #loads the sequence and stops checking for a new sequence
         elif self.next_sequence_bool and self.multi_seq_list_copy:
-            self.Open_Sequence(self.multi_seq_list_copy.pop(0))
-            self.next_sequence_bool = False
+            response = self.multi_seq_list_copy.pop(0)
+            #catches for watering test
+            if response == 'waterAll':
+                self.fluidTimer.threadBool = True
+                self.next_sequence_bool = False
+                self.sequenceBool = False
+            #catches for sequences
+            else:
+                self.Open_Sequence(response)
+                self.next_sequence_bool = False
+                self.sequenceBool = True
 
-        #checks if listbox is empty
-        if self.sequence_lb.size() == 0 and self.sequence_name_label.cget("text") == "":
-            tk.tkMessageBox.showerror("Error", "Please load a sequence first.")
-            return
-
-        #checks if a timer was already created for this sequence
-        #to add again for the next iteration
-        #FIX: if a sequence is started while one is running with the
-        #intent to not repeat, it will crash
-        if not self.timer_created and self.repeat_checkbutton.var.get() == 1 and not self.single_run_bool:
-
-            #prevents creation of multiple timers
-            self.timer_created = True
-
-            #obtains the key for the sequence being ran
-            for key in self.timer_dict:
-                if self.timer_dict[key] != None:
-                    if self.timer_dict[key]['sequence'] == self.sequence_name_label.cget('text'):
-                        sequence_track = key
-
-            #creates the timer for the sequence
-            #with the amount of run time desired
-            Thread_Timer(self, self.timer_dict[sequence_track]['sequence'], self.timer_dict[sequence_track]['timeout'])
-
-        #continues to run until there are no more steps in the sequence
-        if sequenceindex < self.sequence_lb.size():
-
-            #checks if manual stop was used
-            if self.stopped_bool:
+        #stops fluid and load cell tests
+        if self.sequenceBool:
+            #checks if listbox is empty
+            if self.sequence_lb.size() == 0 and self.sequence_name_label.cget("text") == "":
+                tkMessageBox.showerror("Error", "Please load a sequence first.")
                 return
 
-            #only checks next step when not moving
-            if not self.running:
+            #checks if a timer was already created for this sequence
+            #to add again for the next iteration
+            #FIX: if a sequence is started while one is running with the
+            #intent to not repeat, it will crash
+            if not self.timer_created and self.repeat_checkbutton.var.get() == 1 and not self.single_run_bool:
 
-                line = self.sequence_lb.get(sequenceindex)
-                print(line)
+                #prevents creation of multiple timers
+                self.timer_created = True
 
-                #should skip empty lines
-                if line[0] == "":
-                    pass
+                #obtains the key for the sequence being ran
+                for key in self.timer_dict:
+                    if self.timer_dict[key] != None:
+                        if self.timer_dict[key]['sequence'] == self.sequence_name_label.cget('text'):
+                            sequence_track = key
 
-                #waits for time input
-                elif line[0] == "W":
-                    line = int(line[1:])
-                    sequenceindex+=1
-                    self.after(line)
+                #creates the timer for the sequence
+                #with the amount of run time desired
+                Thread_Timer(self, self.timer_dict[sequence_track]['sequence'], self.timer_dict[sequence_track]['timeout'])
 
-                #takes a picture
-                elif line[0:2] =="TP":
+            #continues to run until there are no more steps in the sequence
+            if sequenceindex < self.sequence_lb.size():
 
-                    self.Take_Picture()
-                    sequenceindex+=1
+                #checks if manual stop was used
+                if self.stopped_bool:
+                    return
 
-                elif line[0:2] == "RE":
+                #only checks next step when not moving
+                if not self.running:
 
-                    self.RedEdge_Capture()
-                    sequenceindex+=1
+                    line = self.sequence_lb.get(sequenceindex)
+                    print(line)
 
-                #or moves to location
-                else:
-                    currx, curry, currz = line.split(" , ")
-                    self.Move_By_Coordinates(currx, curry, currz)
-                    sequenceindex += 1
+                    #should skip empty lines
+                    if line[0] == "":
+                        pass
 
-            self.after(100, lambda: self.Run_Sequence())
+                    #waits for time input
+                    elif line[0] == "W":
+                        line = int(line[1:])
+                        sequenceindex+=1
+                        self.after(line)
 
-        #when sequence is done
-        else:
+                    #takes a picture
+                    elif line[0:2] =="TP":
 
-            photocounter = 1
-            sequenceindex = 0
-            self.Pickle_Track()
-            self.next_sequence_bool = True
-            self.timer_created = False
+                        self.Take_Picture()
+                        sequenceindex+=1
+
+                    elif line[0:2] == "RE":
+
+                        self.RedEdge_Capture()
+                        sequenceindex+=1
+
+                    #or moves to location
+                    else:
+                        currx, curry, currz = line.split(" , ")
+                        self.Move_By_Coordinates(currx, curry, currz)
+                        sequenceindex += 1
+
+                self.after(100, lambda: self.Run_Sequence())
+
+            #when sequence is done
+            else:
+
+                photocounter = 1
+                sequenceindex = 0
+                self.Pickle_Track()
+                self.next_sequence_bool = True
+                self.timer_created = False
+                self.Run_Sequence()
+
+        #used after fluid and load cell tests
+        self.next_sequence_bool = True
+        self.Run_Sequence()
+
+        #swapping to constantly check multi_seq_list_copy
+        #for more sequences
+        '''
+        #checks if there are any more sequences to run
+        if self.multi_seq_list_copy:
+            self.Open_Sequence(self.multi_seq_list_copy.pop(0))
             self.Run_Sequence()
 
-            #swapping to constantly check multi_seq_list_copy
-            #for more sequences
-            '''
-            #checks if there are any more sequences to run
-            if self.multi_seq_list_copy:
+        #checks if repeat is desired
+        elif self.repeat_checkbutton.var.get() == 1:
+
+            #ensures full set of sequences is repeated if desired
+            if self.multi_seq_list:
+
+                #creates a copy to remove steps one at a time
+                #and preserve the original
+                self.multi_seq_list_copy = list(self.multi_seq_list)
+
+                #opens the next sequence to run
                 self.Open_Sequence(self.multi_seq_list_copy.pop(0))
-                self.Run_Sequence()
 
-            #checks if repeat is desired
-            elif self.repeat_checkbutton.var.get() == 1:
+            #repeats if desired
+            self.Run_Sequence()
+        '''
 
-                #ensures full set of sequences is repeated if desired
-                if self.multi_seq_list:
-
-                    #creates a copy to remove steps one at a time
-                    #and preserve the original
-                    self.multi_seq_list_copy = list(self.multi_seq_list)
-
-                    #opens the next sequence to run
-                    self.Open_Sequence(self.multi_seq_list_copy.pop(0))
-
-                #repeats if desired
-                self.Run_Sequence()
-            '''
-
-            #constant checking for new sequences
-            '''
-            if not self.multi_seq_list_copy:
-                self.sequence_lb.configure(state = "normal")
-                self.sequence_lb.delete(0,END)
-                self.Run_Sequence()
-            '''
+        #constant checking for new sequences
+        '''
+        if not self.multi_seq_list_copy:
+            self.sequence_lb.configure(state = "normal")
+            self.sequence_lb.delete(0,END)
+            self.Run_Sequence()
+        '''
 
     #resets the folders for saving pictures
     def Initialize_Pickle(self):
