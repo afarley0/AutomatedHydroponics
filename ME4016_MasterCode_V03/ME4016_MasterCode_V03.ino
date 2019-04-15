@@ -39,15 +39,15 @@ class Valve{
 }; 
 /*temporarily hard coded loadcell parameters*/
 static byte loadCellClockInput = 16; //which clock pin will the load cells use
-static int loadCellPinInputs[] = {18, 20}; //what pins correspond with the load cells; CHECK THE LOAD CELL EXCEL SHEET FOR PINS, LOAD CELL NUMBERS, AND WIRING
-static long offsetCellPinInputs[] = {-8745, 49078}; //The offset values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
-static float caliCellPinInputs[] = {-440.94, -420.80};//The calibration values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
+//static int loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33}; //what pins correspond with the load cells; CHECK THE LOAD CELL EXCEL SHEET FOR PINS, LOAD CELL NUMBERS, AND WIRING
+//static long offsetCellPinInputs[] = {-8745, 49078,-8745, 49078,-8745, 49078,-8745, 49078}; //The offset values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
+//static float caliCellPinInputs[] = {-440.94, -420.80,-440.94, -420.80,-440.94, -420.80,-440.94, -420.80};//The calibration values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
 
-//static byte loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
-//static int offsetCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//static int caliCellPinInputs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static byte loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
+static long offsetCellPinInputs[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, };
+static float caliCellPinInputs[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-#define loadCellAmount 2 // How many load cells are you using
+#define loadCellAmount 28 // How many load cells are you using
 HX711 scale1[loadCellAmount]; //creates scale object
 
 const int RHT03_DATA_PIN = 14; // RHT03 data pin
@@ -155,7 +155,7 @@ void readData()
     }
     else if (go == 'r'){ //read loads and returns array of readings
       for(int i = 0; i < loadCellAmount;i++){
-        float reading = scale1[i].get_units(10); //gets the average from 10 readings
+        float reading = scale1[i].read();//get_units(10); //gets the average from 10 readings
         Serial.println(reading); //prints the readings
       }
       Serial.println('g'); //confirms load cells read
