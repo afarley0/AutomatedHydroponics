@@ -3,10 +3,10 @@
 #include <HX711_ADC.h>//Library B
 #include <EEPROM.h>
 
-int eepromAddressCal = 1; //address where calibration and offset values will be stored
-int eepromAddressOffset = 6;
-const int LOADCELL_DOUT_PIN = 31; //HX711 constructor
-const int LOADCELL_SCK_PIN = 14;
+int eepromAddressCal = 41; //address where calibration and offset values will be stored
+int eepromAddressOffset = 46;
+const int LOADCELL_DOUT_PIN = 123; //HX711 constructor
+const int LOADCELL_SCK_PIN = 16;
 
 //HX711 constructor (dout pin, sck pin):
 HX711_ADC LoadCell(LOADCELL_DOUT_PIN,LOADCELL_SCK_PIN);
