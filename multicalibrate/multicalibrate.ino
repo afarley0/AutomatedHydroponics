@@ -6,10 +6,12 @@
 int eepromAddressCal = 1; //address where calibration and offset values will be stored
 int eepromAddressOffset = 6;
 const int LOADCELL_SCK_PIN = 16; //HX711 constructor
-const int LOADCELL_DOUT_PIN[] = {18, 20};
-static int loadCellAmount = 2;
-volatile float cali[2];
-volatile float offset[2];
+//const int LOADCELL_DOUT_PIN[] = {26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53};
+const int LOADCELL_DOUT_PIN[] = {26,28,30,32,34,36,38,27,29,31,33,35,37,39,40,42,44,46,48,50,52,41,43,45,47,49,51,53}; //pins for load cells going down subzones
+//const int LOADCELL_DOUT_PIN[] = {40,42,44,46,48,50,52,41,43,45,47,49,51,53};
+static int loadCellAmount = 28;
+volatile float cali[28];
+volatile float offset[28];
 //HX711 constructor (dout pin, sck pin):
 //HX711_ADC LoadCell(LOADCELL_DOUT_PIN,LOADCELL_SCK_PIN);
 //HX711 scale;
@@ -88,7 +90,7 @@ long t;
 //  Serial.println("For manual edit, send 'c' from serial monitor");
 //  Serial.println("***");
 //}
-HX711 scale[2];
+HX711 scale[28];
 
 void setup() {
   Serial.begin(9600); delay(10);
@@ -99,6 +101,8 @@ void setup() {
       Serial.println("go");
     }
   }
+  int calibrationAddress = 1;
+  int offsetAddress = 6;
   for(int i=0;i<loadCellAmount;i++){
 
     
@@ -158,19 +162,26 @@ void setup() {
     }
     //delay(1000);
     cali[i] = LoadCell.getData() / mass; //calibration 
+    EEPROM.put(calibrationAddress, cali[i]);
     offset[i] = scale[i].get_offset();
     //float offset = 0; //original offset
-    
+    EEPROM.put(offsetAddress, offset[i]);
     LoadCell.setCalFactor(cali[i]); //sets the calibration
     Serial.print("LOAD CELL: ");
     Serial.println(i);
     Serial.print("Calibration: ");
     Serial.println(cali[i]);
+    Serial.print("Saved to EEPROM Address:");
+    Serial.println(calibrationAddress);
     Serial.print("Offset: ");
     Serial.println(offset[i]);
     Serial.println(' ');
+    Serial.print("Saved to EEPROM Address:");
+    Serial.println(offsetAddress);
     Serial.println(' ');
 
+    calibrationAddress = calibrationAddress+10;
+    offsetAddress = offsetAddress+10;
   }
 }
 void loop() {
