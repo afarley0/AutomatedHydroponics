@@ -95,7 +95,7 @@ void useInterrupt(boolean v) { //uses the timer interrupt; Black Magic Register 
 /*all the valves, flow sensors, pumps, and load cells initialize*/
 Valve subzonePump(21,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
 Valve tankValveA(22,0,'t'); //Tank A1 valve; Water Tank
-Valve tankValveB(23,1,'t'); //Tank A2 valve;
+Valve tankValveB(22,1,'t'); //Tank A2 valve; //23
 Valve tankValveC(24,2,'t'); //Tank A3 valve;
 Valve tankValveD(25,3,'t'); //Tank A4 valve;
  
@@ -111,12 +111,7 @@ void setup()
   digitalWrite(FLOWSENSORPIN, HIGH); //write the flow sensor pin high; stolen code from library
   lastflowpinstate = digitalRead(FLOWSENSORPIN); //also reads flow sensor state
   rht.begin(RHT03_DATA_PIN); // begins the temperature sensor readings
-  for(int i = 0; i < loadCellAmount; i++){
-
-    scale1[i].begin(loadCellPinInputs[i],loadCellClockInput); //begins each load cell
-    scale1[i].set_scale(caliCellPinInputs[i]); //sets the scale calibration
-    scale1[i].set_offset(offsetCellPinInputs[i]); //sets the scale offset
-  }
+  initializeLoadCells(); //initializes the load cells
 }
 
 void loop(){
@@ -186,6 +181,8 @@ void readingVolume(int inputVolume){
   while(millis() < endTime && pulses < endPulses){
     //waits until the volume is correct
   }
+  Serial.println(millis());
+  Serial.println(pulses);
   pulses = 0; //resets pulses
   lastflowpinstate = LOW; //resets the flow pin state
   flowrate = 0; //turns off flow rate
@@ -195,6 +192,18 @@ void readingVolume(int inputVolume){
 
 /*Waters an individual Subzone*/
 void waterSubzone(Valve tank, Valve emitter, Valve pump){
+  Serial.println("watering");
+  emitter.on();
+  tank.on();
+  pump.on();
+  readingVolume(volumeToWater);
+  pump.off();
+  tank.off();
+  emitter.off();
+  Serial.println("finished");
+}
+
+void flushSubzone(Valve tank, Valve emitter, Valve pump){
   Serial.println("watering");
   emitter.on();
   tank.on();
@@ -234,4 +243,12 @@ float readTemp(){
   }
   float latestTempC = rht.tempC();
   return latestTempC;
+}
+void initializeLoadCells(){
+  for(int i = 0; i < loadCellAmount; i++){
+
+    //scale1[i].begin(loadCellPinInputs[i],loadCellClockInput); //begins each load cell
+    //scale1[i].set_scale(caliCellPinInputs[i]); //sets the scale calibration
+    //scale1[i].set_offset(offsetCellPinInputs[i]); //sets the scale offset
+  }
 }
