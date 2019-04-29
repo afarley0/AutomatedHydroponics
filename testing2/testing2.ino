@@ -19,7 +19,7 @@ void readData()
     if (go == 'r') //waters subzone; format: waterSubzone;1;10 <- waters subzone 1 for 10 milliliters
     {
       for(int i = 0;i<10;i++){
-        Serial.print(i);
+        Serial.print(12345678);
         delay(100);
       }
       
@@ -28,7 +28,8 @@ void readData()
       //Serial.println(subzoneToWater);
       //Serial.println(volumeToWater);
       //Serial.print('w'); //confirms subzones watered
-      Serial.print(';');
+      delay(1000);
+      Serial.print(";;;;;;;;");
 
     }
     else if(go == 'w'){
@@ -38,6 +39,10 @@ void readData()
       //Serial.println(volumeToWater);
       delay(1500);
       Serial.print('g');
+    }
+    else if(go == 'z'){
+      delay(1000);
+      Serial.print('z');
     }
     else{ //anything else
       Serial.print('e');

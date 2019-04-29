@@ -31,11 +31,11 @@ cam_index = 0
 #ser1 = serial.Serial(port='COM8', baudrate=9600, timeout=1)
 #ser1.open()
 #ser1.close()
-'''
+
 #connects to the proper serial port using pyserial
 ser = serial.Serial(
-     port='COM4',
-     baudrate=250000,
+     port='COM7',
+     baudrate=115200,
      parity=serial.PARITY_NONE,
      stopbits=serial.STOPBITS_ONE,
      bytesize=serial.EIGHTBITS,
@@ -47,7 +47,7 @@ ser = serial.Serial(
 if not ser.isOpen():
 
     ser.isOpen()
-'''
+
 #secondary window for deletion of sequences
 class SeqDeleteWindow(tk.Frame):
 
@@ -83,7 +83,7 @@ class SeqDeleteWindow(tk.Frame):
     def cleanup(self):
 
         #confirms the chosen sequence was correct with yes/no window
-        response = tk.tkMessageBox.askyesno("Confirm", "Are you sure you want to delete '%s'?" %self.v.get())
+        response = tkMessageBox.askyesno("Confirm", "Are you sure you want to delete '%s'?" %self.v.get())
         #if no, it returns to the prior window
         #to select a different sequence
         if not response:
@@ -129,7 +129,7 @@ class MultiSeqWindow(tk.Frame):
     def cleanup(self):
 
         #message box to ensure list is correct
-        response = tk.tkMessageBox.askyesno("Confirm", "Is the above list correct?")
+        response = tkMessageBox.askyesno("Confirm", "Is the above list correct?")
         if not response:
             return
 
@@ -246,30 +246,147 @@ class Thread_Timer(threading.Thread):
 #timer for load cell readings
 class Load_Cell_Timer(threading.Thread):
 
-    def __init__(self,event):
+    def __init__(self,seconds):#,event):
         threading.Thread.__init__(self)
-        self.stopped = event
+
+        self.seconds = seconds
+        #self.stopped = event
         self.setDaemon(True)
         self.threadBool = False
-        #self.start()
+        self.start()
 
     def run(self):
-        while not self.stopped.wait(5):
-            print("load test") #SEND LOAD CELL COMMAND
+        i = 0
+        while i < self.seconds:
+            i += 1
+            time.sleep(1)
 
-            if app.load_checkbutton.var.get() == 1:
+        #while not self.stopped.wait(5):
+        #print("load test")
 
-                app.multi_seq_list_copy.append('l')
+        #if load cell checkbutton is checked
+        if app.load_checkbutton.var.get() == 1:
 
-                while not self.threadBool:
-                    pass
+            app.multi_seq_list_copy.append('l')
 
-                app.load_cell_read()
-                self.threadBool = False
+            while not self.threadBool:
+                pass
 
-#stopFlag.set() USE THIS TO STOP TIMER
-#stopFlag.clear() USE THIS TO CONTINUE TIMER
-#TIMER CURRENTLY DOES NOT STOP
+            time.sleep(1)
+            self.load_cell_read()
+            #self.threadBool = False
+
+        else:
+            self.run()
+
+    #cycles through load cells and creates reading array
+    def load_cell_read(self):
+        app.running = True
+        app.readyToMoveBool = False
+        app.Disable_Widgets(True)
+        time.sleep(1)
+
+        ser1 = serial.Serial('COM8',baudrate=9600,timeout=1)
+        time.sleep(1)
+        reading_array = [0]*84
+        index = 0
+        '''
+        ser1.write(b't')
+        reading = ''
+
+
+        while reading != ';':
+            data = ser1.read()
+            reading = str(data)
+            reading_array[index] = data
+            index = index + 1
+        '''
+        ser1.write(b'r')
+        time.sleep(1)
+        reading = ''
+        while reading != ';;;;;;;;': #8 bytes of stopping data
+            data = ser1.read(8)
+            reading = str(data)
+            try:
+                reading_array[index] = float(data)
+                print(data)
+                index = index + 1
+            except:
+                pass
+            print(index)
+        print(reading_array)
+        time.sleep(1)
+        ser1.flush()
+        ser1.close()
+
+        ser2 = serial.Serial('COM7',baudrate=9600,timeout=1)
+        time.sleep(1)
+        ser2.write(b'r')
+        reading = ''
+        while reading != ';;;;;;;;':
+            data = ser2.read(8)
+            reading = str(data)
+            try:
+                reading_array[index] = float(data)
+                print(data)
+                index = index + 1
+            except:
+                pass
+            print(index)
+        print(reading_array)
+        time.sleep(1)
+        ser2.close()
+        ser3 = serial.Serial('COM9',baudrate=9600,timeout=1)
+        time.sleep(1)
+        ser3.write(b'r')
+        reading = ''
+        while reading != ';;;;;;;;':
+            data = ser3.read(8)
+            reading = str(data)
+            try:
+                reading_array[index] = float(data)
+                print(data)
+                index = index + 1
+            except:
+                pass
+            print(index)
+        print(reading_array)
+        time.sleep(1)
+        ser3.close()
+
+        #reading_array.remove(';;;;;;;;')
+        self.output_excel(reading_array)
+        app.Run_Until_Stop('loadFinished')
+        while self.threadBool:
+            pass
+
+        self.threadBool = False
+        print(threading.active_count())
+
+    #writes load cell readings to csv file
+    def output_excel(self,array):
+        directory = 'test.csv' #change file name here
+
+        #checks if file already exists to create header
+        if not os.path.exists(directory):
+            with open(directory, mode='wb') as test_file:
+                writer = csv.writer(test_file)
+                loadText = [0]*84
+                for i in range(0,84):
+                    loadText[i] = 'Load Cell: ' + str(i+1)
+                header = ['Time'] + loadText #ADD TEMP AND HUMIDITY
+                writer.writerow(header)
+                #test_file.close()
+
+        #create rows for data
+        with open(directory, mode='a') as test_file:
+            test_writer = csv.writer(test_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            time_now = datetime.datetime.now().strftime("%y-%d-%m,%H:%M")
+            #WILL NEED TO ADJUST FOR MORE LOAD CELLS
+            data = [time_now] + array
+            test_writer.writerow(data)
+            time.sleep(0.5)
+            #test_file.close()
 
 #timer for automatic watering
 class Fluids_Timer(threading.Thread):
@@ -367,7 +484,7 @@ class Fluids_Timer(threading.Thread):
         if response == 'e':
             return
         '''
-
+        '''
         #recalculates time needed to wait for 12 hour cycle and stores into dictionary
         self.timeStr = self.fluids_dict['desiredTime']
         self.timeDate = datetime.datetime.now().strftime('%m %d %y')
@@ -385,7 +502,9 @@ class Fluids_Timer(threading.Thread):
         print(self.timeDiff)
         self.fluids_dict['waitTime'] = self.timeDiff.total_seconds()
         print(self.fluids_dict['waitTime'])
+        '''
 
+        self.fluids_dict['waitTime'] = 10
         app.Run_Until_Stop('waterFinished')
 
 #main class
@@ -414,6 +533,7 @@ class Application(tk.Frame):
         self.sequence_photo_dict = {}#stores counters for pictures
         self.locations=[]#stores locations of grid clicks: not currently used
         self.fluidTimer = None#stores variable to start fluid timer on first run
+        #self.sertest = None#stores serial port
 
         #creates dictionary to store desired
         self.timer_dict = {}
@@ -438,10 +558,13 @@ class Application(tk.Frame):
         self.Initialize_Sequences()
         self.Show_Frame(cap)
 
+        #self.sertest = ser
+
         #load cell timer initialization
-        self.stopLoad = threading.Event()
-        self.loadTimer = Load_Cell_Timer(self.stopLoad)
-        self.loadTimer.start()
+        #self.stopLoad = threading.Event()
+        #self.loadTimer = Load_Cell_Timer(self.stopLoad)
+        self.loadTimer = Load_Cell_Timer(5)
+        #self.loadTimer.start()
 
         #used to detect if the grid was clicked
         self.coord_plane.bind("<Button-1>",self.Grid_Clicked)
@@ -724,12 +847,13 @@ class Application(tk.Frame):
         self.z3e4_button = tk.Button(fluids_frame, text="Zone 3: Emitter 4", command=lambda: self.subzoneButton(4,'COM10',self.comboz3e4.get(),self.entryz3e4.get()))
         self.z3e4_button.grid(column=0,row=11,padx=5,pady=5)
 
-        self.zero_button = tk.Button(fluids_frame, text="Zero Load Cells", command=self.zero)
+        self.zero_button = tk.Button(fluids_frame, text="Zero Load Cells", command=self.zeroClicked)
         self.zero_button.grid(column=3,row=12,pady=5,sticky="e")
 
-        #check button variable
+        #check button variables
         auto_state = tk.IntVar()
         load_state = tk.IntVar()
+
         #place check button in fluid frame
         self.auto_checkbutton = tk.Checkbutton(fluids_frame, text="Automatic Watering", variable=auto_state)
         self.auto_checkbutton.grid(column=3,row=2,sticky='e')
@@ -779,7 +903,7 @@ class Application(tk.Frame):
         self.labelz3e4.grid(column=2,row=11,sticky='e')
 
         #places comboboxes in fluid frame
-        self.time_combo = ttk.Combobox(fluids_frame, width=20, values=("11:04:00","11:05:00","3:00:00","4:00:00","5:00:00","6:00:00","7:00:00","8:00:00","9:00:00","10:00:00","11:00:00","12:00:00"))
+        self.time_combo = ttk.Combobox(fluids_frame, width=20, values=("4:40:00","2:00:00","3:00:00","4:00:00","5:00:00","6:00:00","7:00:00","8:00:00","9:00:00","10:00:00","11:00:00","12:00:00"))
         self.time_combo.grid(column=3,row=1,sticky='e')
 
         self.comboz1e1 = ttk.Combobox(fluids_frame,width=10, values=("Tank 1","Tank 2","Tank 3","Tank 4"))
@@ -873,32 +997,40 @@ class Application(tk.Frame):
             print("Automatic Timer Started")
             self.startTimer()
 
+    def zeroClicked(self):
+        if tkMessageBox.askyesno('Confirmation Window','Start Zeroing Sequence?'):
+            self.multi_seq_list_copy.append('z')
+
     #sends command to arduino through serial to zero load cells
     def zero(self):
-        #CALL ZERO LOAD CELL FUNCTION
-        #msgBox = tkMessageBox.askyesno('Confirmation Window','Are you sure?')
-        if tkMessageBox.askyesno('Confirmation Window','Are you sure?'):
-            ser1 = serial.Serial(port='COM3', baudrate=9600, timeout=1)
-            time.sleep(1)
-            ser1.write(b'z')
-            ser1.close()
-            time.sleep(1)
-            ser2 = serial.Serial(port='COM4', baudrate=9600, timeout=1)
-            time.sleep(1)
-            ser2.write(b'z')
-            ser2.close()
-            time.sleep(1)
-            ser3 = serial.Serial(port='COM5', baudrate=9600, timeout=1)
-            time.sleep(1)
-            ser3.write(b'z')
-            ser3.close()
-            print("Zero")
-            #SERIAL PRINT ZERO COMMAND
+        self.running = True
+        self.readyToMoveBool = False
+        self.Disable_Widgets(True)
+
+        self.sertest = serial.Serial(port='COM6', baudrate=9600, timeout=1)
+        time.sleep(1)
+        self.sertest.write(b'z')
+        #sertest.close()
+        #time.sleep(1)
+        '''
+        ser2 = serial.Serial(port='COM4', baudrate=9600, timeout=1)
+        time.sleep(1)
+        ser2.write(b'z')
+        ser2.close()
+        time.sleep(1)
+        ser3 = serial.Serial(port='COM5', baudrate=9600, timeout=1)
+        time.sleep(1)
+        ser3.write(b'z')
+        ser3.close()
+        '''
+
+        s = ""
+        self.Run_Until_Stop(s)
 
     #button functionality for individual subzone watering
-    def subzoneButton(self,sub,ser,tank,volume):
+    def subzoneButton(self,sub,seri,tank,volume):
         if tkMessageBox.askyesno('Confirmation Window','Start Watering Sequence?'):
-            varString = 'subzone' + ',' + str(sub) + ',' + ser + ',' + tank + ',' + str(volume)
+            varString = 'subzone' + ',' + str(sub) + ',' + seri + ',' + tank + ',' + str(volume)
             print(varString)
             self.multi_seq_list_copy.append(varString)
 
@@ -924,13 +1056,13 @@ class Application(tk.Frame):
 
     #obtains GUI values and creates dictionary to send to timer class
     def startTimer(self):
+        #calculates time from
         self.timeStr = self.time_combo.get()
         self.timeDate = datetime.datetime.now().strftime('%m %d %y')
         self.timeEnd = self.timeDate + ' ' + self.timeStr
         self.timeEnd = datetime.datetime.strptime(self.timeEnd, '%m %d %y %I:%M:%S')
         self.timeNow = datetime.datetime.now().strftime('%m %d %y %I:%M:%S')
         self.timeNow = datetime.datetime.strptime(self.timeNow, '%m %d %y %I:%M:%S')
-
         self.timeDiff = self.timeEnd-self.timeNow
         print(self.timeNow)
         print(self.timeEnd)
@@ -939,6 +1071,7 @@ class Application(tk.Frame):
             self.timeDiff = self.timeDiff + datetime.timedelta(days=1) - datetime.timedelta(hours=12)
         print(self.timeDiff)
 
+        #create dictionary for GUI values and inputs
         self.fluids_dict = {}
         self.fluids_dict['desiredTime'] = self.timeStr
         self.fluids_dict['waitTime'] = self.timeDiff.total_seconds()
@@ -975,88 +1108,6 @@ class Application(tk.Frame):
             self.fluidTimer = Fluids_Timer(self.stopFluid, root, self.fluids_dict)
         else:
             self.fluidTimer = Fluids_Timer(self.stopFluid, root, self.fluids_dict)
-
-
-    def load_cell_read(self):
-        self.running = True
-        self.readyToMoveBool = False
-        self.Disable_Widgets(True)
-        ser1 = serial.Serial('COM6',baudrate=9600,timeout=1)
-        time.sleep(1)
-        reading_array = [0]*34
-        index = 0
-        '''
-        ser1.write(b't')
-        reading = ''
-
-
-        while reading != ';':
-            data = ser1.read()
-            reading = str(data)
-            reading_array[index] = data
-            index = index + 1
-        '''
-        ser1.write(b'r')
-        reading = ''
-        while reading != ';':
-            data = ser1.read()
-            reading = str(data)
-            reading_array[index] = data
-            index = index + 1
-        print(reading_array)
-        time.sleep(1)
-        ser1.close()
-        '''
-        ser2 = serial.Serial('COM9',baudrate=9600,timeout=1)
-        time.sleep(1)
-        ser2.write(b'r')
-        reading = ''
-        while reading != ';':
-            data = ser2.read()
-            reading = str(data)
-            reading_array[index] = data
-            index = index + 1
-        print(reading_array)
-        time.sleep(1)
-        ser2.close()
-        ser3 = serial.Serial('COM10',baudrate=9600,timeout=1)
-        time.sleep(1)
-        ser3.write(b'r')
-        reading = ''
-        while reading != ';':
-            data = ser3.read()
-            reading = str(data)
-            reading_array[index] = data
-            index = index + 1
-        print(reading_array)
-        time.sleep(1)
-        ser3.close()
-        '''
-        self.output_excel(reading_array)
-        self.Run_Until_Stop('loadFinished')
-
-    def output_excel(self,array):
-        directory = 'test.csv'
-
-        if not os.path.exists(directory):
-            with open(directory, mode='w') as test_file:
-                writer = csv.writer(test_file)
-                loadText = [0]*84
-                for i in range(0,84):
-                    loadText[i] = 'Load Cell: ' + str(i+1)
-                header = ['Time'] + loadText
-                writer.writerow(header)
-
-        with open(directory, mode='a') as test_file:
-            test_writer = csv.writer(test_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-            #NEEDS CONSTRUCTION OF LABELS
-            time = datetime.datetime.now().strftime("%y-%d-%m,%H:%M")
-            data = array
-            #WILL NEED TO ADJUST FOR MORE LOAD CELLS
-            data = [time,data[0],data[1],data[2],data[3],data[4],data[5],data[6],data[7],data[8],data[9]]
-            test_writer.writerow(data)
-
-
 
     #creates the menu
     def Add_Menu(self):
@@ -1208,7 +1259,7 @@ class Application(tk.Frame):
 
             #creating messagebox
             tk.Tk().wm_withdraw() #to hide the main window
-            result = tk.tkMessageBox.askquestion('Verify','Is the proper camera displayed?',icon = 'warning')
+            result = tkMessageBox.askquestion('Verify','Is the proper camera displayed?',icon = 'warning')
             if result == "yes":
                 #kicks out of function is right
                 return int(index)
@@ -1358,11 +1409,11 @@ class Application(tk.Frame):
 
             #if larger than bounds, show error
             else:
-                tk.tkMessageBox.showerror("Error", "Out Of Bounds.")
+                tkMessageBox.showerror("Error", "Out Of Bounds.")
 
         #if not integer, show error
         except ValueError:
-            tk.tkMessageBox.showerror('Error','Please use numbers as the coordinates.')
+            tkMessageBox.showerror('Error','Please use numbers as the coordinates.')
 
     #creates the grid for selecting a location
     def Grid(self,gridw,gridh):
@@ -1413,7 +1464,7 @@ class Application(tk.Frame):
             try:
 
                 print ("Click ", roundedpos, "Grid coordinates:",column+1,row+1, "Converted position:", pixelpos)
-                result = tk.tkMessageBox.askyesno("New Position", newposmessage , icon='warning')
+                result = tkMessageBox.askyesno("New Position", newposmessage , icon='warning')
                 #if yes, move to clicked location
                 if result:
                     self.grid[row][column] = (self.grid[row][column] +1)%2
@@ -1495,7 +1546,7 @@ class Application(tk.Frame):
 
         #checks if move went beyond 0 and sets to 0
         if value < 0:
-            tk.tkMessageBox.showwarning("Warning", "Movement went past home. Setting axis to 0.")
+            tkMessageBox.showwarning("Warning", "Movement went past home. Setting axis to 0.")
             value = 0
         return value
 
@@ -1650,6 +1701,7 @@ class Application(tk.Frame):
                 self.next_sequence_bool = True
                 self.Disable_Widgets(False)
                 print('Error in watering sequence')
+                ser.open()
 
             #if automatic watering successfully completes
             if s == 'waterFinished':
@@ -1658,20 +1710,37 @@ class Application(tk.Frame):
                 self.next_sequence_bool = True
                 self.Disable_Widgets(False)
                 print('Automatic Watering Finished')
+                ser.open()
                 #reconnect to controller
 
-            if s =='loadFinished':
-                self.running = False
-                self.readyToMoveBool = True
-                self.next_sequence_bool = True
+            #if load cell readings finish
+            if s == "loadFinished":
+                print(1)
+                time.sleep(1)
                 self.Disable_Widgets(False)
+                self.running = False
+                print(2)
+                self.readyToMoveBool = True
+                print(3)
+                self.next_sequence_bool = True
+                print(4)
+
+                print(5)
+                self.loadTimer = Load_Cell_Timer(15)
                 print('Load Cell Reading Finished')
+                Load_Cell_Timer.threadBool = False
+                ser.open()
                 #reconnect to controller
 
-            #reads one byte at a time
-            bytestoread =self.sertest.inWaiting()
-            if bytestoread > 0:
-                s = self.sertest.read(bytestoread)
+            #check if serial port is open and read in byte
+            #if 'self.sertest' in locals():
+            try:
+                #reads one byte at a time
+                bytestoread = self.sertest.inWaiting()
+                if bytestoread > 0:
+                    s = self.sertest.read(bytestoread)
+            except:
+                pass
 
             #if watering completes for single subzone
             if s == "g":
@@ -1680,7 +1749,22 @@ class Application(tk.Frame):
                 self.next_sequence_bool = True
                 self.Disable_Widgets(False)
                 self.sertest.close()
-                print(s)
+                print('Watering Subzone Finished')
+                time.sleep(1)
+                self.sertest = ser
+                self.sertest.open()
+
+            #if load cells finish zeroing
+            if s == 'z':
+                self.running = False
+                self.readyToMoveBool = True
+                self.next_sequence_bool = True
+                self.Disable_Widgets(False)
+                self.sertest.close()
+                print('Load Cells Zeroed')
+                time.sleep(1)
+                self.sertest = ser
+                self.sertest.open()
 
             #continues repeating until movement is done
             if self.running:
@@ -1688,7 +1772,7 @@ class Application(tk.Frame):
                 self.after(10, lambda: self.Run_Until_Stop(s))
 
         except:
-            print("exception")
+            print("exception", sys.exc_info())
 
     #stops the movement of the table
     def On_Stop(self):
@@ -1818,10 +1902,10 @@ class Application(tk.Frame):
         if savename is None:
             return
         elif savename == "":
-            tk.tkMessageBox.showerror("Error", "Please name the sequence.")
+            tkMessageBox.showerror("Error", "Please name the sequence.")
             return
         elif self.Is_Float(savename):
-            tk.tkMessageBox.showerror("Error", "Name must contain at least one letter.")
+            tkMessageBox.showerror("Error", "Name must contain at least one letter.")
             return
         else:
 
@@ -1832,7 +1916,7 @@ class Application(tk.Frame):
                 if savename.lower() == sequence.lower():
 
                     #checks if the user would like to overwrite
-                    result = tk.tkMessageBox.askyesno("Are you sure?", "There is already a file saved as %s."
+                    result = tkMessageBox.askyesno("Are you sure?", "There is already a file saved as %s."
                         "\n Would you like to overwrite it?" % sequence)
 
                     #if yes
@@ -1946,7 +2030,7 @@ class Application(tk.Frame):
         #checks if a sequence is loaded
         #if not, reports error
         if self.sequence_lb.size() == 0 and self.sequence_name_label.cget("text") == "":
-            tk.tkMessageBox.showerror("Error", "Please load a sequence first.")
+            tkMessageBox.showerror("Error", "Please load a sequence first.")
             return
 
         #toggles widgets
@@ -1989,26 +2073,40 @@ class Application(tk.Frame):
             response = self.multi_seq_list_copy.pop(0)
             #catches for watering test
             if response == 'w':
-                self.fluidTimer.threadBool = True
+                print('watered')
+                ser.close()
+                time.sleep(1)
                 self.next_sequence_bool = False
                 self.sequenceBool = False
-                print('watered')
+                self.fluidTimer.threadBool = True
             #catches for individual subzone test
             elif 'subzone' in response:
+                ser.close()
+                time.sleep(1)
                 self.next_sequence_bool = False
                 self.sequenceBool = False
                 varString = response.split(",")
                 sub = varString[1]
-                ser = varString[2]
+                seri = varString[2]
                 tank = varString[3]
                 volume = varString[4]
-                print('subzone watered')
-                self.subzone(sub,ser,tank,volume)
+                print('subzone watering')
+                self.subzone(sub,seri,tank,volume)
+            #catches for load cell readings
             elif response == 'l':
-                self.loadTimer.threadBool = True
+                ser.close()
+                time.sleep(1)
+                print('load cells reading')
                 self.next_sequence_bool = False
                 self.sequenceBool = False
-                print('load cells read')
+                self.loadTimer.threadBool = True
+            elif response == 'z':
+                ser.close()
+                time.sleep(1)
+                self.next_sequence_bool = False
+                self.sequenceBool = False
+                self.zero()
+                print('load cell zeroing')
             #catches for sequences
             else:
                 self.Open_Sequence(response)
@@ -2161,7 +2259,7 @@ class Application(tk.Frame):
         calibration_string = ("Using this button will delete the current limits",
             " \n of the SMART Table and calibrate new ones.",
             " \n \n Are you sure you would like to re-calibrate?")
-        result = tk.tkMessageBox.askyesno("Are you sure?", calibration_string , icon='warning')
+        result = tkMessageBox.askyesno("Are you sure?", calibration_string , icon='warning')
 
         #runs calibration
         if result:
@@ -2209,7 +2307,7 @@ class Application(tk.Frame):
                         if self.timer_dict[key]['sequence'] == self.sequence_name_label.cget("text"):
 
                             #asks if the user wants to replace the old time with the new time
-                            response = tk.tkMessageBox.askyesno("Confirm", "A timeout of {0} minutes is already set for {1}."
+                            response = tkMessageBox.askyesno("Confirm", "A timeout of {0} minutes is already set for {1}."
                                 "\n Would you like to replace it with {2} minutes?" .format(self.timer_dict[key]['timeout'],
                                     self.timer_dict[key]['sequence'], time))
                             #if yes
