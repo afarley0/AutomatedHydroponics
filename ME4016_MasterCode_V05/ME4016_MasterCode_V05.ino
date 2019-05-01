@@ -14,7 +14,7 @@ class Valve{
   char valveChar; //is it a tank or emitter valve
   int subzone; //which subzone
   public:
-  Valve(int pin, int inputSubzone, char inputChar){
+  Valve(int pin, int inputSubzone = 0, char inputChar = ';'){
     pinOutput = pin; //sets the pin
     valveChar = inputChar; //sets the specific valve
     stat = false; //it starts off
@@ -38,7 +38,7 @@ class Valve{
   }
 }; 
 /*temporarily hard coded loadcell parameters*/
-static byte loadCellClockInput = 16; //which clock pin will the load cells use
+static byte loadCellClockInput = 17; //which clock pin will the load cells use
 //static int loadCellPinInputs[] = {26, 27, 28, 29, 30, 31, 32, 33}; //what pins correspond with the load cells; CHECK THE LOAD CELL EXCEL SHEET FOR PINS, LOAD CELL NUMBERS, AND WIRING
 //static long offsetCellPinInputs[] = {-8745, 49078,-8745, 49078,-8745, 49078,-8745, 49078}; //The offset values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
 //static float caliCellPinInputs[] = {-440.94, -420.80,-440.94, -420.80,-440.94, -420.80,-440.94, -420.80};//The calibration values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
@@ -50,68 +50,41 @@ static float caliCellPinInputs[28];
 
 #define loadCellAmount 28 // How many load cells are you using
 HX711 scale; //creates scale object
-
+//  Temp and humidity Sensor: Looking at the front (grated side) of the RHT03, the pinout is as follows:
+//   1     2        3       4
+//  VCC  DATA  No-Connect  GND
 const int RHT03_DATA_PIN = 14; // RHT03 data pin
 RHT03 rht; // This creates a RTH03 object, which we'll use to interact with the sensor
 
-#define FLOWSENSORPIN 15 //The pin the flow sensor goes to
-
-
-volatile uint16_t pulses = 0;// count how many pulses
-volatile uint8_t lastflowpinstate;// track the state of the pulse pin
-volatile uint32_t lastflowratetimer = 0; // you can try to keep time of how long it is between pulses
-volatile float flowrate; // and use that to calculate a flow rate
 volatile int volumeToWater; // the volume to total volume to water in mL
-// Interrupt is called once a millisecond, looks for any pulses from the sensor!
-SIGNAL(TIMER0_COMPA_vect) {
-  uint8_t x = digitalRead(FLOWSENSORPIN); //reads the flow sensor
-  
-  if (x == lastflowpinstate) { 
-    lastflowratetimer++; // adds time to the flow rate timer; used for the flow rate (partially obselete)
-    return; // nothing changed!
-  }
-  
-  if (x == HIGH) {
-    //low to high transition!
-    pulses++; //adds to the number of tracked pulses
-  }
-  lastflowpinstate = x; //sets the last flow pin state
-  
-}
-
-void useInterrupt(boolean v) { //uses the timer interrupt; Black Magic Register level code; DO NOT TOUCH;
-  if (v) {
-    // Timer0 is already used for millis() - we'll just interrupt somewhere
-    // in the middle and call the "Compare A" function above
-    OCR0A = 0xAF;
-    TIMSK0 |= _BV(OCIE0A);
-  } else {
-    // do not call the interrupt function COMPA anymore
-    TIMSK0 &= ~_BV(OCIE0A);
-  }
-}
-
-
 
 /*all the valves, flow sensors, pumps, and load cells initialize*/
-Valve subzonePump(21,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
+//Valve subzonePump(21,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
 Valve tankValveA(22,0,'t'); //Tank A1 valve; Water Tank
 Valve tankValveB(23,1,'t'); //Tank A2 valve;
 Valve tankValveC(24,2,'t'); //Tank A3 valve;
 Valve tankValveD(25,3,'t'); //Tank A4 valve;
- 
-Valve emitterValveA(17,1,'e'); //Emitter A; Subzone 1
-Valve emitterValveB(18,2,'e'); //Emitter B; Subzone 2
-Valve emitterValveC(19,3,'e'); //Emitter C; Subzone 3
-Valve emitterValveD(20,4,'e'); //Emitter D; Subzone 4
+Valve tanks[4] = {tankValveA,tankValveB,tankValveC,tankValveD};
+
+Valve emitterValveA(18,1,'e'); //Emitter A; Subzone 1
+Valve emitterValveB(19,2,'e'); //Emitter B; Subzone 2
+Valve emitterValveC(20,3,'e'); //Emitter C; Subzone 3
+Valve emitterValveD(21,4,'e'); //Emitter D; Subzone 4
+Valve emitters[4] = {emitterValveA,emitterValveB,emitterValveC,emitterValveD};
+
+Valve pumpForward(16); //runs the pump in the forward direction
+Valve pumpReverse(15); //runs the pump in the reverse direction 
+Valve sVForward(14); //solenoid valve that directs the flow in the forward direction
+Valve sVReverse(13); //solenoid valve that directs the flow in the reverse direction
+
+Valve zone1(12); //activates zone 1
+Valve zone2(11); //activates zone 2
+Valve zone3(10); //activates zone 3
+Valve zones[3] = {zone1, zone2, zone3};
 
 void setup() 
 {
   Serial.begin(9600); //begins usb serial connection
-  
-  pinMode(FLOWSENSORPIN, INPUT); //sets the flow sensor as an input
-  digitalWrite(FLOWSENSORPIN, HIGH); //write the flow sensor pin high; stolen code from library
-  lastflowpinstate = digitalRead(FLOWSENSORPIN); //also reads flow sensor state
   rht.begin(RHT03_DATA_PIN); // begins the temperature sensor readings
 
 }
@@ -126,24 +99,18 @@ void readData()
 {
    if (Serial.available() > 0){ //Checks if there is serial available 
     char go = Serial.read(); //Reads command
-    if (go == 'w') //waters subzone; format: w 1 10 <- waters subzone 1 for 10 milliliters
+    if (go == 'w') //waters subzone; format: w 1 2 10 <- waters zone 1 subzone 2 for 10 milliliters
     {
-      int subzoneToWater = Serial.parseInt(); //sets subzone to water
+      int zoneToWater = Serial.parseInt()-1; //sets subzone to water
+      int subzoneToWater = Serial.parseInt()-1; //sets subzone to water
       volumeToWater =  Serial.parseInt(); //sets how much total water is needed in mL; INDIVIDUAL WATER MUST BE SET IN PYTHON
-      switch (subzoneToWater) {
-        case 1:
-          waterSubzone(tankValveA, emitterValveA, subzonePump); //watering subzone 1
-          break;
-        case 2:
-          waterSubzone(tankValveB, emitterValveB, subzonePump); //watering subzone 2
-          break;
-        case 3:
-          waterSubzone(tankValveC, emitterValveC, subzonePump); //watering subzone 3
-          break;
-        case 4:
-          waterSubzone(tankValveD, emitterValveD, subzonePump); //watering subzone 4
-          break;
-      }
+      
+      //water subzone
+      waterSubzone(zones[zoneToWater],emitters[subzoneToWater],volumeToWater);
+      //empty emitter
+      flushEmitter(zones[zoneToWater],emitters[subzoneToWater]);
+      //empty manifold
+      flushManifold(tankValveA);
       
       Serial.println('g'); //confirms subzones watered
     }
@@ -198,10 +165,9 @@ void readData()
 
       Serial.print(";;;;;;;;"); //confirms load cells read
     }
-    else if (go == 't'){ //read loads and returns array of readings
-
-      Serial.println(readHumid());
-      Serial.println(readTemp());
+    else if (go == 't'){ //read temperature and relative humidity
+      //reads the temp and humidity
+      getTempHumid();
       Serial.println(';'); //confirms load cells read
     }
     else{ //anything else
@@ -216,60 +182,95 @@ void readingVolume(int inputVolume){
   float A = 32.195; //the ratio of mL per second while watering
   float B = -706.12; //the calibrated off set of volume
   long endTime = startTime + inputVolume*A + B; //calculating when to stop whating
-  /*The pulses are a back up in case the timer fails, it's less accurate but it provides redundancy*/
-  pulses = 0; // setting the pulses to 0
-  float C = 0.2324; //the ratio of mL per pulse while watering
-  float D = 14.306 + 20 ;//the calibrated off set of volume
-  uint16_t endPulses = inputVolume*C + D; //the end pulse
-  while(millis() < endTime && pulses < endPulses){
+  //DELETE: add emergency timer
+  while(millis() < endTime){
     //waits until the volume is correct
   }
-  pulses = 0; //resets pulses
-  lastflowpinstate = LOW; //resets the flow pin state
-  flowrate = 0; //turns off flow rate
-  lastflowratetimer = 0; //resets the flow rater timer; perhaps obselete
   startTime = 0; //resets the start time; perhaps obselete
 }
 
 /*Waters an individual Subzone*/
-void waterSubzone(Valve tank, Valve emitter, Valve pump){
-  Serial.println("watering");
-  emitter.on();
+void waterSubzone(Valve zone, Valve tank, Valve emitter){
   tank.on();
-  pump.on();
+  sVForward.on();
+  zone.on();
+  pumpForward.on();
+  delay(3000); //delays 3 seconds
+  emitter.on();
   readingVolume(volumeToWater);
-  pump.off();
-  tank.off();
+  pumpForward.off();
+  sVForward.off();
+  //tank.off();
+  //emitter.off();
+}
+
+/*Flushes the emitter*/
+void flushEmitter(Valve zone, Valve emitter){
+  sVReverse.on();
+  pumpReverse.on();
+  delay(45000);  //delays for 45 seconds
   emitter.off();
-  Serial.println("finished");
+  zone.off();
+  pumpReverse.off();
 }
-/*Reads the relative humidity*/
-float readHumid(){
+
+/*Flushes the manifold*/
+void flushManifold(Valve tank){
+  sVForward.on();
+  tank.on(); // water tank
+  pumpForward.on();
+  pumpReverse.on();
+  delay(3000); //delays 3 seconds
+  tank.off();
+  delay(3000); //delays 3 seonds
+  pumpForward.off();
+  delay(3000); //delays 3 seconds
+  sVForward.off();
+  zone1.on();
+  zone2.on();
+  zone3.on();
+  delay(4000);
+  zone1.off();
+  zone2.off();
+  zone3.off();
+  sVReverse.off();
+  pumpReverse.off();
+}
+
+
+void getTempHumid()
+{
+  // Call rht.update() to get new humidity and temperature values from the sensor.
+  int updateRet = rht.update();
+  
   // If successful, the update() function will return 1.
   // If update fails, it will return a value <0
-  long startTime = millis()+5000;
-  while(rht.update()< 1)
+  int stopCount = 0;
+  while(updateRet != 1 && stopCount <10)
   {
-    if(millis()>startTime){
-      return 0;
-    }
+    //Serial.println("E");
     delay(RHT_READ_INTERVAL_MS);
+    // The humidity(), tempC(), and tempF() functions can be called -- after 
+    // a successful update() -- to get the last humidity and temperature
+    // value 
+    updateRet = rht.update();
+    stopCount++;
   }
+  if(stopCount == 9){
+    //figure something out
+  }
+  stopCount = 0;
   float latestHumidity = rht.humidity();
-  return latestHumidity;
-}
-/*Reads the temperature in C*/
-float readTemp(){
-  // If successful, the update() function will return 1.
-  // If update fails, it will return a value <0
-  long startTime = millis()+5000;
-  while(rht.update()< 1)
-  {
-    if(millis()>startTime){
-      return 0;
-    }
-    delay(RHT_READ_INTERVAL_MS);
-  }
   float latestTempC = rht.tempC();
-  return latestTempC;
+  float latestTempF = rht.tempF();
+  
+  // Now print the values:
+  Serial.println("Humidity: " + String(latestHumidity, 1) + " %");
+  Serial.println("Temp (F): " + String(latestTempF, 1) + " deg F");
+  Serial.println("Temp (C): " + String(latestTempC, 1) + " deg C");
+}
+
+
+void shutDown(){
+  
 }
