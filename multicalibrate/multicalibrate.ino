@@ -170,7 +170,7 @@ void setup() {
     Serial.print("LOAD CELL: ");
     Serial.println(i);
     Serial.print("Calibration: ");
-    Serial.println(cali[i]);
+    Serial.println(cali[i],5);
     Serial.print("Saved to EEPROM Address:");
     Serial.println(calibrationAddress);
     Serial.print("Offset: ");

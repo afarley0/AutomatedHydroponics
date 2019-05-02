@@ -13,21 +13,38 @@ class Valve{
   boolean stat; //is the valve on?
   char valveChar; //is it a tank or emitter valve
   int subzone; //which subzone
+  bool reverse;
   public:
-  Valve(int pin, int inputSubzone = 0, char inputChar = ';'){
+  Valve( bool isReverse, int pin, int inputSubzone = 0, char inputChar = ';'){
     pinOutput = pin; //sets the pin
     valveChar = inputChar; //sets the specific valve
     stat = false; //it starts off
     subzone = inputSubzone;
+    reverse = isReverse; //For valves using the switch board, reverse == true. This just flips the LOW and HIGH ouputs
     pinMode(pinOutput, OUTPUT); //that pin outputs
-    digitalWrite(pinOutput,LOW);
+    if(reverse){ //reverses output if reverse
+      digitalWrite(pinOutput,HIGH);
+    }
+    else{
+      digitalWrite(pinOutput,LOW);
+    }
   }
   void on(){ 
-    digitalWrite(pinOutput,HIGH); //turns the valve on
+    if(reverse){ //reverses output if reverse
+      digitalWrite(pinOutput,LOW); //turns pin off for reversed valves
+    }
+    else{
+      digitalWrite(pinOutput,HIGH); //turns pin on for reversed valves
+    } //turns the valve on
     stat = true;
   }
   void off(){
-    digitalWrite(pinOutput,LOW); //turns the valve off
+    if(reverse){ //reverses output if reverse
+      digitalWrite(pinOutput,LOW);
+    }
+    else{
+      digitalWrite(pinOutput,HIGH);
+    } //turns the valve off
     stat = false;
   }
   boolean getStat(){ //gets the status of valve
@@ -44,8 +61,8 @@ static byte loadCellClockInput = 17; //which clock pin will the load cells use
 //static float caliCellPinInputs[] = {-440.94, -420.80,-440.94, -420.80,-440.94, -420.80,-440.94, -420.80};//The calibration values for the load cells; CHECK THE LOAD CELL EXCEL SHEET
 
 static byte loadCellPinInputs[] = {26,28,30,32,34,36,38,27,29,31,33,35,37,39,40,42,44,46,48,50,52,41,43,45,47,49,51,53};
-static long offsetCellPinInputs[28];
-static float caliCellPinInputs[28];
+static long offsetCellPinInputs[28];// = {-114208, 100191, 12854, -124601};
+static float caliCellPinInputs[28];// = {-158.64151, 0.19497, -0.12369, 0.1153};
 
 
 #define loadCellAmount 28 // How many load cells are you using
@@ -58,40 +75,43 @@ RHT03 rht; // This creates a RTH03 object, which we'll use to interact with the 
 
 volatile int volumeToWater; // the volume to total volume to water in mL
 
-/*all the valves, flow sensors, pumps, and load cells initialize*/
+/*all the valves, flow sensors, pumps, and load cells initialize. READ CLASS DOCUMENTATION*/
 //Valve subzonePump(21,0,'p'); //THIS IS A PUMP, NOT A VALVE, I'M JUST USING THE VALVE CLASS FOR SIMPLICITY
-Valve tankValveA(22,0,'t'); //Tank A1 valve; Water Tank
-Valve tankValveB(23,1,'t'); //Tank A2 valve;
-Valve tankValveC(24,2,'t'); //Tank A3 valve;
-Valve tankValveD(25,3,'t'); //Tank A4 valve;
-Valve tanks[4] = {tankValveA,tankValveB,tankValveC,tankValveD};
+Valve tankValveA(false,22,0,'t'); //Tank A1 valve; WATER TANK
+Valve tankValveB(false,23,1,'t'); //Tank A2 valve;
+Valve tankValveC(false,24,2,'t'); //Tank A3 valve;
+Valve tankValveD(false,25,3,'t'); //Tank A4 valve;
+Valve tanks[4] = {tankValveA,tankValveB,tankValveC,tankValveD}; //easy array of tanks
 
-Valve emitterValveA(18,1,'e'); //Emitter A; Subzone 1
-Valve emitterValveB(19,2,'e'); //Emitter B; Subzone 2
-Valve emitterValveC(20,3,'e'); //Emitter C; Subzone 3
-Valve emitterValveD(21,4,'e'); //Emitter D; Subzone 4
-Valve emitters[4] = {emitterValveA,emitterValveB,emitterValveC,emitterValveD};
+Valve emitterValveA(false,18,1,'e'); //Emitter A; Subzone 1
+Valve emitterValveB(false,19,2,'e'); //Emitter B; Subzone 2
+Valve emitterValveC(false,20,3,'e'); //Emitter C; Subzone 3
+Valve emitterValveD(false,21,4,'e'); //Emitter D; Subzone 4
+Valve emitters[4] = {emitterValveA,emitterValveB,emitterValveC,emitterValveD}; //easy array of emitters
 
-Valve pumpForward(16); //runs the pump in the forward direction
-Valve pumpReverse(15); //runs the pump in the reverse direction 
-Valve sVForward(14); //solenoid valve that directs the flow in the forward direction
-Valve sVReverse(13); //solenoid valve that directs the flow in the reverse direction
 
-Valve zone1(12); //activates zone 1
-Valve zone2(11); //activates zone 2
-Valve zone3(10); //activates zone 3
-Valve zones[3] = {zone1, zone2, zone3};
+// THESE PINS ARE REVERSED
+Valve pumpForward(true,16); //runs the pump in the forward direction
+Valve pumpReverse(true,15); //runs the pump in the reverse direction 
+Valve sVForward(true,14); //solenoid valve that directs the flow in the forward direction
+Valve sVReverse(true,13); //solenoid valve that directs the flow in the reverse direction
+//THESE PINS ARE REVERSED
+Valve zone1(true,12); //activates zone 1
+Valve zone2(true,11); //activates zone 2
+Valve zone3(true,10); //activates zone 3
+Valve zones[3] = {zone1, zone2, zone3}; //easy zone array
+
+Valve SEMV(false,8); //Special Emitter Manifold Valve TO MADISON: ??? not sure about this, pin also needs to change
+Valve SwitchControl(false,9); //TO MADISON: this needs to be changed to switch that controls the switch board
 
 void setup() 
 {
   Serial.begin(9600); //begins usb serial connection
   rht.begin(RHT03_DATA_PIN); // begins the temperature sensor readings
-
 }
 
 void loop(){
   readData(); //reads the serial port 
-  
 }
 
 /*reads the data taken from the usb serial connection*/
@@ -101,16 +121,17 @@ void readData()
     char go = Serial.read(); //Reads command
     if (go == 'w') //waters subzone; format: w 1 2 10 <- waters zone 1 subzone 2 for 10 milliliters
     {
-      int zoneToWater = Serial.parseInt()-1; //sets subzone to water
-      int subzoneToWater = Serial.parseInt()-1; //sets subzone to water
+      int zoneToWater = Serial.parseInt()-1; //sets subzone to water -1; The -1 is for C++ purposes
+      int subzoneToWater = Serial.parseInt()-1; //sets subzone to water -1; The -1 is for C++ purposes
       volumeToWater =  Serial.parseInt(); //sets how much total water is needed in mL; INDIVIDUAL WATER MUST BE SET IN PYTHON
       
-      //water subzone
-      waterSubzone(zones[zoneToWater],emitters[subzoneToWater],volumeToWater);
+      //waters subzone. Uses the valve arrays for convient coding
+      waterSubzone(zones[zoneToWater],emitters[subzoneToWater],tanks[subzoneToWater]);
+      //TO MADISON: Not sure the proceedure, call me if you have questions
       //empty emitter
-      flushEmitter(zones[zoneToWater],emitters[subzoneToWater]);
+      //flushEmitter(zones[zoneToWater],emitters[subzoneToWater]);
       //empty manifold
-      flushManifold(tankValveA);
+      //flushManifold(tankValveA);
       
       Serial.println('g'); //confirms subzones watered
     }
@@ -158,15 +179,16 @@ void readData()
         if (reading < 10){
           Serial.print('0');
         }
-        Serial.print(reading); //prints the readings
+        Serial.println(reading); //prints the readings
         pinIndex++;
         delay(200);
       }
 
-      Serial.print(";;;;;;;;"); //confirms load cells read
+      Serial.println(";;;;;;;;"); //confirms load cells read
     }
     else if (go == 't'){ //read temperature and relative humidity
       //reads the temp and humidity
+      //TO MADISON: If alex has problems with this, have him call me
       getTempHumid();
       Serial.println(';'); //confirms load cells read
     }
@@ -175,69 +197,7 @@ void readData()
     }
   }
 }
-
-/* reads the volume while watering or flushing*/
-void readingVolume(int inputVolume){
-  long startTime = millis(); //the watering start time
-  float A = 32.195; //the ratio of mL per second while watering
-  float B = -706.12; //the calibrated off set of volume
-  long endTime = startTime + inputVolume*A + B; //calculating when to stop whating
-  //DELETE: add emergency timer
-  while(millis() < endTime){
-    //waits until the volume is correct
-  }
-  startTime = 0; //resets the start time; perhaps obselete
-}
-
-/*Waters an individual Subzone*/
-void waterSubzone(Valve zone, Valve tank, Valve emitter){
-  tank.on();
-  sVForward.on();
-  zone.on();
-  pumpForward.on();
-  delay(3000); //delays 3 seconds
-  emitter.on();
-  readingVolume(volumeToWater);
-  pumpForward.off();
-  sVForward.off();
-  //tank.off();
-  //emitter.off();
-}
-
-/*Flushes the emitter*/
-void flushEmitter(Valve zone, Valve emitter){
-  sVReverse.on();
-  pumpReverse.on();
-  delay(45000);  //delays for 45 seconds
-  emitter.off();
-  zone.off();
-  pumpReverse.off();
-}
-
-/*Flushes the manifold*/
-void flushManifold(Valve tank){
-  sVForward.on();
-  tank.on(); // water tank
-  pumpForward.on();
-  pumpReverse.on();
-  delay(3000); //delays 3 seconds
-  tank.off();
-  delay(3000); //delays 3 seonds
-  pumpForward.off();
-  delay(3000); //delays 3 seconds
-  sVForward.off();
-  zone1.on();
-  zone2.on();
-  zone3.on();
-  delay(4000);
-  zone1.off();
-  zone2.off();
-  zone3.off();
-  sVReverse.off();
-  pumpReverse.off();
-}
-
-
+// Gets the temp and humidity sensor. may take a while
 void getTempHumid()
 {
   // Call rht.update() to get new humidity and temperature values from the sensor.
@@ -258,19 +218,133 @@ void getTempHumid()
   }
   if(stopCount == 9){
     //figure something out
+    Serial.println(-1);
+    Serial.println(-1);
+  }
+  else{
+    float latestHumidity = rht.humidity();
+    float latestTempC = rht.tempC();
+    
+    // Now print the values:
+    Serial.println(latestHumidity, 1); //prints relative humidity
+    Serial.println(latestTempC, 1); //prints temp in C
   }
   stopCount = 0;
-  float latestHumidity = rht.humidity();
-  float latestTempC = rht.tempC();
-  float latestTempF = rht.tempF();
-  
-  // Now print the values:
-  Serial.println("Humidity: " + String(latestHumidity, 1) + " %");
-  Serial.println("Temp (F): " + String(latestTempF, 1) + " deg F");
-  Serial.println("Temp (C): " + String(latestTempC, 1) + " deg C");
+  Serial.println(';');
 }
 
 
-void shutDown(){
+/* reads the volume while watering or flushing*/
+void readingVolume(int inputVolume){
+  long startTime = millis(); //the watering start time
+  float A = 32.195; //the ratio of mL per second while watering
+  float B = -706.12; //the calibrated off set of volume
+  long endTime = startTime + inputVolume*A + B; //calculating when to stop whating
+  //DELETE: add emergency timer
+  while(millis() < endTime){
+    //waits until the volume is correct
+  }
+  startTime = 0; //resets the start time; perhaps obselete
+}
+
+/*Waters an individual Subzone. TO MADISON: Likely needs to be changed*/
+void waterSubzone(Valve zone, Valve tank, Valve emitter){
+  tank.on(); 
+  sVForward.on();
+  zone.on();
+  pumpForward.on();
+  delay(3000); //delays 3 seconds
+  emitter.on();
+  readingVolume(volumeToWater);
+  pumpForward.off();
+  sVForward.off();
+  //tank.off();
+  //emitter.off();
+}
+
+//Waters the same solution to the subzone. TO MADISON: needs more details
+void waterSame(Valve zone, Valve tank, Valve emitter){
+  tank.on();//turns on inputted tank valve
+  zone.on();//turns on inputted zone
+  emitter.on(); //turns on inputted emitter
+  //TO MADISON: interlock check to ensure pump is on
+  //TO MADISON: I'm not sure what there is to do here
+}
+//Waters different solutions to the subzone. TO MADISON: needs more details
+void waterDifferent(Valve zone, Valve tank, Valve emitter){
+  tankValveA.on(); //activates the water tank: MIGHT BE REDUNDENT
+  flushManifold(tankValveA); //flushes the manifold
+  sVForward.off(); //turns off forward solenoid valve
+  tankValveA.off(); //turns off water tank: MIGHT BE REDUNDENT
+  pumpForward.off(); //turns off forward pump
+  SEMV.on();//OPENS THE SEMV(Special Emitter Manifold Valve)
+  zone.on(); //Turns on zone valve
   
+  SEMV.off();//CLOSES THE SEMV
+  zone.off();//closes zone valve
+  
+  sVForward.on();//Forward Valve on
+  pumpForward.on();//foward pump on
+  sVReverse.on();//Reverse Valve on
+  pumpReverse.on();//Reverse pump on
+
+  emitter.on();//opens solution valve
+  delay(4000); //delays 4 seconds (Change if need be)
+
+  pumpReverse.off();
+  sVReverse.off();
+  zone.on();
+  emitter.on();
+  //primeEmitter(zone, tank, emitter); //TO MADISON: Not sure how this will be implemented
+  
+  //TO MADISON: Not sure how to do this last part
+  /*
+   CHECK TO SEE IF THERE IS MORE WATERING TO DO IN THE ZONE
+  if YES {TURN OFF SZV, REPEAT CLEARING SYSTEM, RERUN different solution}
+  if NO {CLOSE SBZMV (SUBZONE MANIFOLD), CLOSE FV, CLOSE TMV, TURN OFF FP
+   */
+}
+
+/*Flushes the emitter: TO MADISON: Likely needs changing*/
+void flushEmitter(Valve zone, Valve emitter){
+  sVReverse.on();
+  pumpReverse.on();
+  delay(45000);  //delays for 45 seconds
+  emitter.off();
+  zone.off();
+  pumpReverse.off();
+}
+
+/*Flushes the manifold: TO MADISON: I was a bit confused on how to do this. might have redundent features from water different solution*/
+void flushManifold(Valve tank){
+  tank.on(); // water tank
+  sVForward.on();
+  sVReverse.on();
+  pumpForward.on();
+  pumpReverse.on();
+  delay(1000);//??? HOW LONG
+  sVForward.off();
+  tank.off();
+  pumpForward.off();
+  /* possible wrong or outdated
+  delay(3000); //delays 3 seconds
+  tank.off();
+  delay(3000); //delays 3 seonds
+  pumpForward.off();
+  delay(3000); //delays 3 seconds
+  sVForward.off();
+  zone1.on();
+  zone2.on();
+  zone3.on();
+  delay(4000);
+  zone1.off();
+  zone2.off();
+  zone3.off();
+  sVReverse.off();
+  pumpReverse.off();
+  */
+}
+
+void primeEmitter(Valve zone, Valve tank, Valve emitter){
+  //TO MADISON: not sure how this is wanted. call zone, tank, and emitter in this function
 }
