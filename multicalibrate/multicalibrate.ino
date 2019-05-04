@@ -5,7 +5,7 @@
 
 int eepromAddressCal = 1; //address where calibration and offset values will be stored
 int eepromAddressOffset = 6;
-const int LOADCELL_SCK_PIN = 16; //HX711 constructor
+const int LOADCELL_SCK_PIN = 14; //HX711 constructor
 //const int LOADCELL_DOUT_PIN[] = {26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53};
 const int LOADCELL_DOUT_PIN[] = {26,28,30,32,34,36,38,27,29,31,33,35,37,39,40,42,44,46,48,50,52,41,43,45,47,49,51,53}; //pins for load cells going down subzones
 //const int LOADCELL_DOUT_PIN[] = {40,42,44,46,48,50,52,41,43,45,47,49,51,53};
@@ -168,9 +168,9 @@ void setup() {
     EEPROM.put(offsetAddress, offset[i]);
     LoadCell.setCalFactor(cali[i]); //sets the calibration
     Serial.print("LOAD CELL: ");
-    Serial.println(i);
+    Serial.println(i+1);
     Serial.print("Calibration: ");
-    Serial.println(cali[i],5);
+    Serial.println(cali[i]);
     Serial.print("Saved to EEPROM Address:");
     Serial.println(calibrationAddress);
     Serial.print("Offset: ");

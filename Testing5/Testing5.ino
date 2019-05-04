@@ -6,14 +6,15 @@ void setup() {
     pinMode(i,OUTPUT);
     digitalWrite(i,LOW);
   }
-  digitalWrite(10, HIGH);
-  digitalWrite(11, HIGH);
-  digitalWrite(12, HIGH);
-  digitalWrite(13, HIGH);
-  digitalWrite(14, HIGH);
-  digitalWrite(15, HIGH);
-  digitalWrite(16, HIGH);
-   
+  
+  digitalWrite(19, HIGH);
+  digitalWrite(20, HIGH);
+  digitalWrite(21, HIGH);
+  digitalWrite(22, HIGH);
+  digitalWrite(23, HIGH);
+  digitalWrite(24, HIGH);
+  digitalWrite(25, HIGH);
+  
   Serial.print('.');
 }
 void loop() {

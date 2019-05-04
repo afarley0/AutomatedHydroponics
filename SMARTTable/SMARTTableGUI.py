@@ -286,37 +286,48 @@ class Load_Cell_Timer(threading.Thread):
         app.Disable_Widgets(True)
         time.sleep(1)
 
-        ser1 = serial.Serial('COM8',baudrate=9600,timeout=1)
+        sert = serial.Serial('COM7',baudrate=9600,timeout=1)
         time.sleep(1)
-        reading_array = [0]*84
+        reading_array = [0]*86
         index = 0
-        '''
-        ser1.write(b't')
+
+        sert.write(b't')
         reading = ''
 
-
-        while reading != ';':
-            data = ser1.read()
+        while reading != ';;;;':
+            data = sert.read(4)
+            print(data)
             reading = str(data)
-            reading_array[index] = data
-            index = index + 1
-        '''
-        ser1.write(b'r')
+            print(data)
+            try:
+                if len(reading) == 4:
+                    reading_array[index] = float(data)
+                    print(data)
+                    index = index + 1
+            except:
+                pass
+            print(reading)
+
         time.sleep(1)
+        sert.close()
+
+        ser1 = serial.Serial('COM8',baudrate=9600,timeout=1)
+        time.sleep(1)
+        ser1.write(b'r')
         reading = ''
         while reading != ';;;;;;;;': #8 bytes of stopping data
             data = ser1.read(8)
             reading = str(data)
             try:
-                reading_array[index] = float(data)
-                print(data)
-                index = index + 1
+                if len(reading) == 8:
+                    reading_array[index] = float(data)
+                    print(data)
+                    index = index + 1
             except:
                 pass
             print(index)
         print(reading_array)
         time.sleep(1)
-        ser1.flush()
         ser1.close()
 
         ser2 = serial.Serial('COM7',baudrate=9600,timeout=1)
@@ -327,16 +338,18 @@ class Load_Cell_Timer(threading.Thread):
             data = ser2.read(8)
             reading = str(data)
             try:
-                reading_array[index] = float(data)
-                print(data)
-                index = index + 1
+                if len(reading) == 8:
+                    reading_array[index] = float(data)
+                    print(data)
+                    index = index + 1
             except:
                 pass
             print(index)
         print(reading_array)
         time.sleep(1)
         ser2.close()
-        ser3 = serial.Serial('COM9',baudrate=9600,timeout=1)
+
+        ser3 = serial.Serial('COM13',baudrate=9600,timeout=1)
         time.sleep(1)
         ser3.write(b'r')
         reading = ''
@@ -344,16 +357,17 @@ class Load_Cell_Timer(threading.Thread):
             data = ser3.read(8)
             reading = str(data)
             try:
-                reading_array[index] = float(data)
-                print(data)
-                index = index + 1
+                if len(reading) == 8:
+                    reading_array[index] = float(data)
+                    print(data)
+                    index = index + 1
             except:
                 pass
             print(index)
         print(reading_array)
         time.sleep(1)
         ser3.close()
-
+        
         #reading_array.remove(';;;;;;;;')
         self.output_excel(reading_array)
         app.Run_Until_Stop('loadFinished')
@@ -374,7 +388,7 @@ class Load_Cell_Timer(threading.Thread):
                 loadText = [0]*84
                 for i in range(0,84):
                     loadText[i] = 'Load Cell: ' + str(i+1)
-                header = ['Time'] + loadText #ADD TEMP AND HUMIDITY
+                header = ['Time', 'Humidity', 'Temperature'] + loadText #ADD TEMP AND HUMIDITY
                 writer.writerow(header)
                 #test_file.close()
 
@@ -484,7 +498,7 @@ class Fluids_Timer(threading.Thread):
         if response == 'e':
             return
         '''
-        '''
+
         #recalculates time needed to wait for 12 hour cycle and stores into dictionary
         self.timeStr = self.fluids_dict['desiredTime']
         self.timeDate = datetime.datetime.now().strftime('%m %d %y')
@@ -502,9 +516,9 @@ class Fluids_Timer(threading.Thread):
         print(self.timeDiff)
         self.fluids_dict['waitTime'] = self.timeDiff.total_seconds()
         print(self.fluids_dict['waitTime'])
-        '''
 
-        self.fluids_dict['waitTime'] = 10
+
+        #self.fluids_dict['waitTime'] = 10
         app.Run_Until_Stop('waterFinished')
 
 #main class
@@ -823,16 +837,16 @@ class Application(tk.Frame):
         self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=lambda: self.subzoneButton(4,'COM6',self.comboz1e4.get(),self.entryz1e4.get()))
         self.z1e4_button.grid(column=0,row=3,padx=5,pady=5)
 
-        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=lambda: self.subzoneButton(1,'COM9',self.comboz2e1.get(),self.entryz2e1.get()))
+        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=lambda: self.subzoneButton(1,'COM13',self.comboz2e1.get(),self.entryz2e1.get()))
         self.z2e1_button.grid(column=0,row=4,padx=5,pady=5)
 
-        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=lambda: self.subzoneButton(2,'COM9',self.comboz2e2.get(),self.entryz2e2.get()))
+        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=lambda: self.subzoneButton(2,'COM13',self.comboz2e2.get(),self.entryz2e2.get()))
         self.z2e2_button.grid(column=0,row=5,padx=5,pady=5)
 
-        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=lambda: self.subzoneButton(3,'COM9',self.comboz2e3.get(),self.entryz2e3.get()))
+        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=lambda: self.subzoneButton(3,'COM13',self.comboz2e3.get(),self.entryz2e3.get()))
         self.z2e3_button.grid(column=0,row=6,padx=5,pady=5)
 
-        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=lambda: self.subzoneButton(4,'COM9',self.comboz2e4.get(),self.entryz2e4.get()))
+        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=lambda: self.subzoneButton(4,'COM13',self.comboz2e4.get(),self.entryz2e4.get()))
         self.z2e4_button.grid(column=0,row=7,padx=5,pady=5)
 
         self.z3e1_button = tk.Button(fluids_frame, text="Zone 3: Emitter 1", command=lambda: self.subzoneButton(1,'COM10',self.comboz3e1.get(),self.entryz3e1.get()))
@@ -903,7 +917,7 @@ class Application(tk.Frame):
         self.labelz3e4.grid(column=2,row=11,sticky='e')
 
         #places comboboxes in fluid frame
-        self.time_combo = ttk.Combobox(fluids_frame, width=20, values=("4:40:00","2:00:00","3:00:00","4:00:00","5:00:00","6:00:00","7:00:00","8:00:00","9:00:00","10:00:00","11:00:00","12:00:00"))
+        self.time_combo = ttk.Combobox(fluids_frame, width=20, values=("1:00:00","2:00:00","3:00:00","4:00:00","5:00:00","6:00:00","7:00:00","8:00:00","9:00:00","10:00:00","11:00:00","12:00:00"))
         self.time_combo.grid(column=3,row=1,sticky='e')
 
         self.comboz1e1 = ttk.Combobox(fluids_frame,width=10, values=("Tank 1","Tank 2","Tank 3","Tank 4"))
@@ -1007,22 +1021,41 @@ class Application(tk.Frame):
         self.readyToMoveBool = False
         self.Disable_Widgets(True)
 
-        self.sertest = serial.Serial(port='COM6', baudrate=9600, timeout=1)
+        self.sertest = serial.Serial(port='COM8', baudrate=9600, timeout=1)
         time.sleep(1)
         self.sertest.write(b'z')
-        #sertest.close()
-        #time.sleep(1)
         '''
-        ser2 = serial.Serial(port='COM4', baudrate=9600, timeout=1)
-        time.sleep(1)
-        ser2.write(b'z')
-        ser2.close()
-        time.sleep(1)
-        ser3 = serial.Serial(port='COM5', baudrate=9600, timeout=1)
-        time.sleep(1)
-        ser3.write(b'z')
-        ser3.close()
+        reading = ''
+        while reading != ';':
+            data = self.sertest.read()
+            reading = str(data)
+            print(reading)
         '''
+        self.sertest.close()
+        time.sleep(1)
+
+        self.sertest = serial.Serial(port='COM7', baudrate=9600, timeout=1)
+        time.sleep(1)
+        self.sertest.write(b'z')
+        '''
+        while reading != ';':
+            data = self.sertest.read()
+            reading = str(data)
+            print(reading)
+        '''
+        self.sertest.close()
+        time.sleep(1)
+        self.sertest = serial.Serial(port='COM13', baudrate=9600, timeout=1)
+        time.sleep(1)
+        self.sertest.write(b'z')
+        '''
+        while reading != ';':
+            data = self.sertest.read()
+            reading = str(data)
+            print(reading)
+        '''
+
+
 
         s = ""
         self.Run_Until_Stop(s)
@@ -2105,8 +2138,8 @@ class Application(tk.Frame):
                 time.sleep(1)
                 self.next_sequence_bool = False
                 self.sequenceBool = False
-                self.zero()
                 print('load cell zeroing')
+                self.zero()
             #catches for sequences
             else:
                 self.Open_Sequence(response)
