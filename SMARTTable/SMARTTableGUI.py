@@ -28,13 +28,9 @@ sequenceindex = 0
 photocounter = 1
 cam_index = 0
 
-#ser1 = serial.Serial(port='COM8', baudrate=9600, timeout=1)
-#ser1.open()
-#ser1.close()
-
 #connects to the proper camera serial port using pyserial
 ser = serial.Serial(
-     port='COM7',
+     port='COM6',
      baudrate=115200,
      parity=serial.PARITY_NONE,
      stopbits=serial.STOPBITS_ONE,
@@ -286,7 +282,7 @@ class Load_Cell_Timer(threading.Thread):
         #app.Disable_Widgets(True)
         time.sleep(1)
 
-        sert = serial.Serial('COM7',baudrate=9600,timeout=1) #zone 2 serial
+        sert = serial.Serial('COM15',baudrate=9600,timeout=1) #zone 2 serial
         time.sleep(1)
         reading_array = [0]*86
         index = 0
@@ -309,7 +305,7 @@ class Load_Cell_Timer(threading.Thread):
         time.sleep(1)
         sert.close()
 
-        ser1 = serial.Serial('COM8',baudrate=9600,timeout=1) #zone 1 serial
+        ser1 = serial.Serial('COM11',baudrate=9600,timeout=1) #zone 1 serial
         time.sleep(1)
         ser1.write(b'r')
         reading = ''
@@ -329,7 +325,7 @@ class Load_Cell_Timer(threading.Thread):
         time.sleep(1)
         ser1.close()
 
-        ser2 = serial.Serial('COM7',baudrate=9600,timeout=1) #zone 2 serial
+        ser2 = serial.Serial('COM15',baudrate=9600,timeout=1) #zone 2 serial
         time.sleep(1)
         ser2.write(b'r')
         reading = ''
@@ -349,7 +345,7 @@ class Load_Cell_Timer(threading.Thread):
         time.sleep(1)
         ser2.close()
 
-        ser3 = serial.Serial('COM13',baudrate=9600,timeout=1) #zone 3 serial
+        ser3 = serial.Serial('COM15',baudrate=9600,timeout=1) #zone 3 serial
         time.sleep(1)
         ser3.write(b'r')
         reading = ''
@@ -468,21 +464,21 @@ class Fluids_Timer(threading.Thread):
         print('Starting Zone: 1, Emitter: 1 Sequence')
         #check if tanks are the same for next subzone then do not drain
         state = self.check(isDrained,self.fluids_dict['z1e1tank'],self.fluids_dict['z1e2tank'])
-        response = self.zoneWater('1','1','COM13',self.fluids_dict['z1e1tank'],self.fluids_dict['z1e1volume'],state,'7')
+        response = self.zoneWater('1','1','COM15',self.fluids_dict['z1e1tank'],self.fluids_dict['z1e1volume'],state,'7') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
 
         print('Starting Zone: 1, Emitter: 2 Sequence')
         state = self.check(isDrained,self.fluids_dict['z1e2tank'],self.fluids_dict['z1e3tank'])
-        response = self.zoneWater('1','2','COM13',self.fluids_dict['z1e2tank'],self.fluids_dict['z1e2volume'],state,'8')
+        response = self.zoneWater('1','2','COM15',self.fluids_dict['z1e2tank'],self.fluids_dict['z1e2volume'],state,'8') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
 
         print('Starting Zone: 1, Emitter: 3 Sequence')
         state = self.check(isDrained,self.fluids_dict['z1e3tank'],self.fluids_dict['z1e4tank'])
-        response = self.zoneWater('1','3','COM13',self.fluids_dict['z1e3tank'],self.fluids_dict['z1e3volume'],state,'7')
+        response = self.zoneWater('1','3','COM15',self.fluids_dict['z1e3tank'],self.fluids_dict['z1e3volume'],state,'7') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
@@ -490,10 +486,10 @@ class Fluids_Timer(threading.Thread):
         print('Starting Zone: 1, Emitter: 4 Sequence')
         #last subzone always drains
         if self.isDrained == True:
-            response = self.zoneWater('1','4','COM13',self.fluids_dict['z1e4tank'],self.fluids_dict['z1e4volume'],'4','8')
+            response = self.zoneWater('1','4','COM15',self.fluids_dict['z1e4tank'],self.fluids_dict['z1e4volume'],'4','8') #zone 3 serial
             self.isDrained = True
         elif self.isDrained == False:
-            response = self.zoneWater('1','4','COM13',self.fluids_dict['z1e4tank'],self.fluids_dict['z1e4volume'],'3','8')
+            response = self.zoneWater('1','4','COM15',self.fluids_dict['z1e4tank'],self.fluids_dict['z1e4volume'],'3','8') #zone 3 serial
             self.isDrained = True
         if response == 'e':
             app.Run_Until_Stop('e')
@@ -502,21 +498,21 @@ class Fluids_Timer(threading.Thread):
         print('Starting Zone: 2, Emitter: 1 Sequence')
         #check if tanks are the same for next subzone then do not drain
         state = self.check(isDrained,self.fluids_dict['z2e1tank'],self.fluids_dict['z2e2tank'])
-        response = self.zoneWater('2','5','COM13',self.fluids_dict['z2e1tank'],self.fluids_dict['z2e1volume'],state,'7')
+        response = self.zoneWater('2','5','COM15',self.fluids_dict['z2e1tank'],self.fluids_dict['z2e1volume'],state,'7') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
 
         print('Starting Zone: 2, Emitter: 2 Sequence')
         state = self.check(isDrained,self.fluids_dict['z2e2tank'],self.fluids_dict['z2e3tank'])
-        response = self.zoneWater('2','6','COM13',self.fluids_dict['z2e2tank'],self.fluids_dict['z2e2volume'],state,'8')
+        response = self.zoneWater('2','6','COM15',self.fluids_dict['z2e2tank'],self.fluids_dict['z2e2volume'],state,'8') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
 
         print('Starting Zone: 2, Emitter: 3 Sequence')
         state = self.check(isDrained,self.fluids_dict['z2e3tank'],self.fluids_dict['z2e4tank'])
-        response = self.zoneWater('2','7','COM13',self.fluids_dict['z2e3tank'],self.fluids_dict['z2e3volume'],state,'7')
+        response = self.zoneWater('2','7','COM15',self.fluids_dict['z2e3tank'],self.fluids_dict['z2e3volume'],state,'7') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
@@ -524,10 +520,10 @@ class Fluids_Timer(threading.Thread):
         print('Starting Zone: 2, Emitter: 4 Sequence')
         #last subzone always drains
         if self.isDrained == True:
-            response = self.zoneWater('2','8','COM13',self.fluids_dict['z2e4tank'],self.fluids_dict['z2e4volume'],'4','8')
+            response = self.zoneWater('2','8','COM15',self.fluids_dict['z2e4tank'],self.fluids_dict['z2e4volume'],'4','8') #zone 3 serial
             self.isDrained = True
         elif self.isDrained == False:
-            response = self.zoneWater('2','8','COM13',self.fluids_dict['z2e4tank'],self.fluids_dict['z2e4volume'],'3','8')
+            response = self.zoneWater('2','8','COM15',self.fluids_dict['z2e4tank'],self.fluids_dict['z2e4volume'],'3','8') #zone 3 serial
             self.isDrained = True
         if response == 'e':
             app.Run_Until_Stop('e')
@@ -536,21 +532,21 @@ class Fluids_Timer(threading.Thread):
         print('Starting Zone: 3, Emitter: 1 Sequence')
         #check if tanks are the same for next subzone then do not drain
         state = self.check(isDrained,self.fluids_dict['z3e1tank'],self.fluids_dict['z3e2tank'])
-        response = self.zoneWater('3','9','COM13',self.fluids_dict['z3e1tank'],self.fluids_dict['z3e1volume'],state,'7')
+        response = self.zoneWater('3','9','COM15',self.fluids_dict['z3e1tank'],self.fluids_dict['z3e1volume'],state,'7') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
 
         print('Starting Zone: 3, Emitter: 2 Sequence')
         state = self.check(isDrained,self.fluids_dict['z3e2tank'],self.fluids_dict['z3e3tank'])
-        response = self.zoneWater('3','10','COM13',self.fluids_dict['z3e2tank'],self.fluids_dict['z3e2volume'],state,'8')
+        response = self.zoneWater('3','10','COM15',self.fluids_dict['z3e2tank'],self.fluids_dict['z3e2volume'],state,'8') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
 
         print('Starting Zone: 3, Emitter: 3 Sequence')
         state = self.check(isDrained,self.fluids_dict['z3e3tank'],self.fluids_dict['z3e4tank'])
-        response = self.zoneWater('3','11','COM13',self.fluids_dict['z3e3tank'],self.fluids_dict['z3e3volume'],state,'7')
+        response = self.zoneWater('3','11','COM15',self.fluids_dict['z3e3tank'],self.fluids_dict['z3e3volume'],state,'7') #zone 3 serial
         if response == 'e':
             app.Run_Until_Stop('e')
             return
@@ -558,10 +554,10 @@ class Fluids_Timer(threading.Thread):
         print('Starting Zone: 3, Emitter: 4 Sequence')
         #last subzone always drains
         if self.isDrained == True:
-            response = self.zoneWater('3','12','COM13',self.fluids_dict['z3e4tank'],self.fluids_dict['z3e4volume'],'4','8')
+            response = self.zoneWater('3','12','COM15',self.fluids_dict['z3e4tank'],self.fluids_dict['z3e4volume'],'4','8') #zone 3 serial
             self.isDrained = True
         elif self.isDrained == False:
-            response = self.zoneWater('3','12','COM13',self.fluids_dict['z3e4tank'],self.fluids_dict['z3e4volume'],'3','8')
+            response = self.zoneWater('3','12','COM15',self.fluids_dict['z3e4tank'],self.fluids_dict['z3e4volume'],'3','8') #zone 3 serial
             self.isDrained = True
         if response == 'e':
             app.Run_Until_Stop('e')
@@ -897,40 +893,40 @@ class Application(tk.Frame):
 
         #creates buttons within fluid frame
         #zone 3 serial
-        self.z1e1_button = tk.Button(fluids_frame, text="Zone 1: Emitter 1", command=lambda: self.subzoneButton(1,1,'COM13',self.comboz1e1.get(),self.entryz1e1.get(),'4'))
+        self.z1e1_button = tk.Button(fluids_frame, text="Zone 1: Emitter 1", command=lambda: self.subzoneButton(1,1,'COM15',self.comboz1e1.get(),self.entryz1e1.get(),'4'))
         self.z1e1_button.grid(column=0,row=0,padx=5,pady=5)
 
-        self.z1e2_button = tk.Button(fluids_frame, text="Zone 1: Emitter 2", command=lambda: self.subzoneButton(1,2,'COM13',self.comboz1e2.get(),self.entryz1e2.get(),'4'))
+        self.z1e2_button = tk.Button(fluids_frame, text="Zone 1: Emitter 2", command=lambda: self.subzoneButton(1,2,'COM15',self.comboz1e2.get(),self.entryz1e2.get(),'4'))
         self.z1e2_button.grid(column=0,row=1,padx=5,pady=5)
 
-        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=lambda: self.subzoneButton(1,3,'COM13',self.comboz1e3.get(),self.entryz1e3.get(),'4'))
+        self.z1e3_button = tk.Button(fluids_frame, text="Zone 1: Emitter 3", command=lambda: self.subzoneButton(1,3,'COM15',self.comboz1e3.get(),self.entryz1e3.get(),'4'))
         self.z1e3_button.grid(column=0,row=2,padx=5,pady=5)
 
-        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=lambda: self.subzoneButton(1,4,'COM13',self.comboz1e4.get(),self.entryz1e4.get(),'4'))
+        self.z1e4_button = tk.Button(fluids_frame, text="Zone 1: Emitter 4", command=lambda: self.subzoneButton(1,4,'COM15',self.comboz1e4.get(),self.entryz1e4.get(),'4'))
         self.z1e4_button.grid(column=0,row=3,padx=5,pady=5)
 
-        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=lambda: self.subzoneButton(2,5,'COM13',self.comboz2e1.get(),self.entryz2e1.get(),'4'))
+        self.z2e1_button = tk.Button(fluids_frame, text="Zone 2: Emitter 1", command=lambda: self.subzoneButton(2,5,'COM15',self.comboz2e1.get(),self.entryz2e1.get(),'4'))
         self.z2e1_button.grid(column=0,row=4,padx=5,pady=5)
 
-        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=lambda: self.subzoneButton(2,6,'COM13',self.comboz2e2.get(),self.entryz2e2.get(),'4'))
+        self.z2e2_button = tk.Button(fluids_frame, text="Zone 2: Emitter 2", command=lambda: self.subzoneButton(2,6,'COM15',self.comboz2e2.get(),self.entryz2e2.get(),'4'))
         self.z2e2_button.grid(column=0,row=5,padx=5,pady=5)
 
-        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=lambda: self.subzoneButton(2,7,'COM13',self.comboz2e3.get(),self.entryz2e3.get(),'4'))
+        self.z2e3_button = tk.Button(fluids_frame, text="Zone 2: Emitter 3", command=lambda: self.subzoneButton(2,7,'COM15',self.comboz2e3.get(),self.entryz2e3.get(),'4'))
         self.z2e3_button.grid(column=0,row=6,padx=5,pady=5)
 
-        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=lambda: self.subzoneButton(2,8,'COM13',self.comboz2e4.get(),self.entryz2e4.get(),'4'))
+        self.z2e4_button = tk.Button(fluids_frame, text="Zone 2: Emitter 4", command=lambda: self.subzoneButton(2,8,'COM15',self.comboz2e4.get(),self.entryz2e4.get(),'4'))
         self.z2e4_button.grid(column=0,row=7,padx=5,pady=5)
 
-        self.z3e1_button = tk.Button(fluids_frame, text="Zone 3: Emitter 1", command=lambda: self.subzoneButton(2,9,'COM13',self.comboz3e1.get(),self.entryz3e1.get(),'4'))
+        self.z3e1_button = tk.Button(fluids_frame, text="Zone 3: Emitter 1", command=lambda: self.subzoneButton(2,9,'COM15',self.comboz3e1.get(),self.entryz3e1.get(),'4'))
         self.z3e1_button.grid(column=0,row=8,padx=5,pady=5)
 
-        self.z3e2_button = tk.Button(fluids_frame, text="Zone 3: Emitter 2", command=lambda: self.subzoneButton(2,10,'COM13',self.comboz3e2.get(),self.entryz3e2.get(),'4'))
+        self.z3e2_button = tk.Button(fluids_frame, text="Zone 3: Emitter 2", command=lambda: self.subzoneButton(2,10,'COM15',self.comboz3e2.get(),self.entryz3e2.get(),'4'))
         self.z3e2_button.grid(column=0,row=9,padx=5,pady=5)
 
-        self.z3e3_button = tk.Button(fluids_frame, text="Zone 3: Emitter 3", command=lambda: self.subzoneButton(2,11,'COM13',self.comboz3e3.get(),self.entryz3e3.get(),'4'))
+        self.z3e3_button = tk.Button(fluids_frame, text="Zone 3: Emitter 3", command=lambda: self.subzoneButton(2,11,'COM15',self.comboz3e3.get(),self.entryz3e3.get(),'4'))
         self.z3e3_button.grid(column=0,row=10,padx=5,pady=5)
 
-        self.z3e4_button = tk.Button(fluids_frame, text="Zone 3: Emitter 4", command=lambda: self.subzoneButton(2,12,'COM13',self.comboz3e4.get(),self.entryz3e4.get(),'4'))
+        self.z3e4_button = tk.Button(fluids_frame, text="Zone 3: Emitter 4", command=lambda: self.subzoneButton(2,12,'COM15',self.comboz3e4.get(),self.entryz3e4.get(),'4'))
         self.z3e4_button.grid(column=0,row=11,padx=5,pady=5)
 
         self.zero_button = tk.Button(fluids_frame, text="Zero Load Cells", command=self.zeroClicked)
@@ -947,7 +943,7 @@ class Application(tk.Frame):
         self.auto_checkbutton = tk.Checkbutton(fluids_frame, text="Automatic Watering", variable=auto_state)
         self.auto_checkbutton.grid(column=3,row=2,sticky='e')
 
-        self.load_checkbutton = tk.Checkbutton(fluids_frame, text="Load Cell Reading", variable=load_state)
+        self.load_checkbutton = tk.Checkbutton(fluids_frame, text="Sensor Reading", variable=load_state)
         self.load_checkbutton.grid(column=3,row=3,sticky='e')
         self.load_checkbutton.var = load_state
 
@@ -1096,7 +1092,7 @@ class Application(tk.Frame):
         self.readyToMoveBool = False
         self.Disable_Widgets(True)
 
-        self.sertest = serial.Serial(port='COM8', baudrate=9600, timeout=1) #zone 1 serial
+        self.sertest = serial.Serial(port='COM11', baudrate=9600, timeout=1) #zone 1 serial
         time.sleep(1)
         self.sertest.write(b'z')
         '''
@@ -1109,7 +1105,7 @@ class Application(tk.Frame):
         self.sertest.close()
         time.sleep(1)
 
-        self.sertest = serial.Serial(port='COM7', baudrate=9600, timeout=1) #zone 2 serial
+        self.sertest = serial.Serial(port='COM15', baudrate=9600, timeout=1) #zone 2 serial
         time.sleep(1)
         self.sertest.write(b'z')
         '''
@@ -1120,7 +1116,7 @@ class Application(tk.Frame):
         '''
         self.sertest.close()
         time.sleep(1)
-        self.sertest = serial.Serial(port='COM13', baudrate=9600, timeout=1) #zone 3 serial
+        self.sertest = serial.Serial(port='COM15', baudrate=9600, timeout=1) #zone 3 serial
         time.sleep(1)
         self.sertest.write(b'z')
         '''
@@ -1144,7 +1140,7 @@ class Application(tk.Frame):
         self.readyToMoveBool = False
         self.Disable_Widgets(True)
 
-        self.sertest = serial.Serial(port='COM13', baudrate=9600, timeout=1) #zone 3 serial
+        self.sertest = serial.Serial(port='COM15', baudrate=9600, timeout=1) #zone 3 serial
         time.sleep(1)
         self.sertest.write(b'c')
 
